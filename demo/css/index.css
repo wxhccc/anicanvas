@@ -1,0 +1,100 @@
+/*base*/
+body,
+dl,
+dd,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span {
+  margin: 0;
+  padding: 0px;
+}
+body {
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: normal;
+}
+img {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+em,
+i,
+b {
+  font-style: normal;
+}
+ul,
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: none;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+input,
+select,
+option {
+  outline: none;
+}
+html {
+  height: 100%;
+}
+/*common*/
+.flt {
+  float: left;
+}
+.fltr {
+  float: right;
+}
+.flt-box a,
+.flt-box span,
+.flt-box b,
+.flt-box i,
+.flt-box div,
+.flt-box ul,
+.flt-box li {
+  float: left;
+}
+.wrap {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f3f3f3;
+}
+.abs-full {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+canvas{
+  width : 100%;
+  height: 100%;
+}
+
+

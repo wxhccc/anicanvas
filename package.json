@@ -1,0 +1,47 @@
+{
+  "requires": true,
+  "lockfileVersion": 1,
+  "dependencies": {
+    "lodash": "^4.17.10"
+  },
+  "name": "anicanvas",
+  "description": "a canvas library for animation scene in html",
+  "version": "0.0.1",
+  "main": "index.js",
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-stage-0": "^6.24.1",
+    "koa": "^2.5.1",
+    "koa-static": "^4.0.2",
+    "nodemon": "^1.17.4",
+    "rollup": "^0.58.2",
+    "rollup-plugin-babel": "^3.0.4",
+    "rollup-plugin-commonjs": "^9.1.3",
+    "rollup-plugin-json": "^2.3.0",
+    "rollup-plugin-node-resolve": "^3.3.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "rollup -w -c scripts/dev.config.js",
+    "build": "rollup -c scripts/prod.config.js",
+    "demo-dev": "rollup -w -c scripts/demo-dev.config.js",
+    "demo-server": "nodemon scripts/demo-dev-server.js",
+    "demo-es5": "rollup -w -c scripts/demo.config.js",
+    "start": "npm run demo-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wxhccc/anicanvas.git"
+  },
+  "keywords": [
+    "anicanvas"
+  ],
+  "author": "gavinhe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wxhccc/anicanvas/issues"
+  },
+  "homepage": "https://github.com/wxhccc/anicanvas#readme"
+}
