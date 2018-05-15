@@ -180,7 +180,7 @@ class Invitation{
 	          context.globalAlpha = sprite.opacity > 0 ? sprite.opacity : 0;
 	        }
 	        sprite.top += sprite.velocityY * data;  
-	        context.drawImage(midbg,0,0,midbg.width,midbg.height,sprite.left,sprite.top,sprite.width,sprite.height);
+	        context.drawImage(midbg,0,0,midbg.width,midbg.height,sprite.left,sprite.top + 20,sprite.width,sprite.height);
 	        context.restore();
         }
       }
@@ -221,11 +221,11 @@ class Invitation{
       }
     };
 
-    let midBgLayer = new Anicanvas.Layer('midbg', {top:6.96*rem+20, left:0.52*rem, width:13.52*rem, opacity:0, height:12.7*rem, data: {img:null}}, midBgPanter, midBgBehaviors);
+    let midBgLayer = new Anicanvas.Layer('midbg', {top:6.27*rem, left:0.52*rem, width:13.52*rem, opacity:0, height:12.7*rem, data: {img:null}}, midBgPanter, midBgBehaviors);
     /*人物*/
     let peopleCell = [{x:0,y:0,w:268,h:384},{x:270,y:0,w:268,h:384},{x:540,y:0,w:268,h:384},{x:810,y:0,w:268,h:384}],
         peoplePainter = new Anicanvas.SheetPainter(images['p1_03_01'], peopleCell, {interval:500, autoruning:true, iteration:'infinite'})
-    let people = new Anicanvas.Sprite('people', {top:6.27*rem,left:2.2*rem,width:10.72*rem,opacity:0,height:15.36*rem}, peoplePainter);
+    let people = new Anicanvas.Sprite('people', {left:2.2*rem,width:10.72*rem,opacity:0,height:15.36*rem}, peoplePainter);
 
     /*固定图片*/
     let customPainter = {
@@ -235,7 +235,7 @@ class Invitation{
       }
     };
     let floor = new Anicanvas.Sprite('floor', {top:19.31*rem, left:2.745*rem, width:10.56*rem, height:2.88*rem, data:{ img: images['p1_03_03']}}, customPainter);
-    let desc = new Anicanvas.Sprite('desc', {top:14.275*rem, left:3.84*rem, width:7.02*rem, height:5.12*rem, data:{img: images['p1_03_02']}}, customPainter);
+    let desc = new Anicanvas.Sprite('desc', {top:7*rem, left:3.84*rem, width:7.02*rem, height:5.12*rem, data:{img: images['p1_03_02']}}, customPainter);
 
 
     midBgLayer.addSprite(people);

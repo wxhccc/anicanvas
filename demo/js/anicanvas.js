@@ -245,7 +245,14 @@
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
         if (this.painter && this.painter.paint && this.visible) {
+          var _ref = this.$parent || { left: 0, top: 0 },
+              left = _ref.left,
+              top = _ref.top;
+
+          context.save();
+          context.translate(left, top);
           this.painter.paint(this, context, time, fdelta, data);
+          context.restore();
         }
       }
     }, {
@@ -345,9 +352,18 @@
     }, {
       key: 'addLayer',
       value: function addLayer() {
+        var _this2 = this;
+
         var layers = this.layers;
 
-        layers.push.apply(layers, arguments);
+        for (var _len = arguments.length, layer = Array(_len), _key = 0; _key < _len; _key++) {
+          layer[_key] = arguments[_key];
+        }
+
+        layers.push.apply(layers, layer);
+        layer.forEach(function (item) {
+          return item.$parent = _this2;
+        });
         objKeySort(layers, 'zindex');
       }
       /*添加精灵*/
@@ -355,9 +371,18 @@
     }, {
       key: 'addSprite',
       value: function addSprite() {
+        var _this3 = this;
+
         var sprites = this.sprites;
 
-        sprites.push.apply(sprites, arguments);
+        for (var _len2 = arguments.length, sprite = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+          sprite[_key2] = arguments[_key2];
+        }
+
+        sprites.push.apply(sprites, sprite);
+        sprite.forEach(function (item) {
+          return item.$parent = _this3;
+        });
         objKeySort(sprites, 'zindex');
       }
     }]);
@@ -579,7 +604,14 @@
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
         if (this.painter && this.painter.paint && this.visible) {
+          var _ref = this.$parent || { left: 0, top: 0 },
+              left = _ref.left,
+              top = _ref.top;
+
+          context.save();
+          context.translate(left, top);
           this.painter.paint(this, context, time, fdelta, data);
+          context.restore();
         }
       }
     }, {

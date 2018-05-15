@@ -29,12 +29,14 @@ export default class Layer extends Sprite {
   addLayer(...layer){
     let { layers } = this;
     layers.push(...layer);
+    layer.forEach(item => (item.$parent = this))
     objKeySort(layers, 'zindex');
   }
   /*添加精灵*/
   addSprite(...sprite){
     let { sprites } = this;
     sprites.push(...sprite);
+    sprite.forEach(item => (item.$parent = this))
     objKeySort(sprites, 'zindex');
   }
 }
