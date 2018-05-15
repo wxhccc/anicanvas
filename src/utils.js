@@ -28,6 +28,10 @@ export function isNumeric(obj) {
 export function jsonCopy(obj) {  
   return JSON.parse(JSON.stringify(obj));
 }
+/* json数据对比 */
+export function jsonEqual(obj1, obj2) {  
+  return JSON.stringify(obj1) === JSON.stringify(obj2);
+}
 /* 对象数组按某一键值排序 */
 export function objKeySort(obj_arr=[],key='',desc=false){
   return obj_arr.sort((a,b)=>{

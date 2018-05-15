@@ -6,24 +6,18 @@ import {isType, objKeySort} from '../utils';
 */
 export default class Layer extends Sprite {
   constructor(name='', args={}, painter=null, behaviors={}){
-    super();
+    super(name, args, painter, behaviors);
     this.layers = [];
     this.sprites = [];
-    this.name = name;
-    this.painter = painter;
-    this.behaviors = isType(behaviors, 'object') ? behaviors : {};
-    Object.assign(this, args);
   }
-  paint(context,time,fdelta,data) {
-    if(this.painter && this.painter.paint){
-      this.painter.paint(this,context,time,fdelta);
-    }
+  paint(context, time, fdelta, data) {
+    super.paint(context, time, fdelta, data);
     let paintFn = i => i.paint &&　i.paint(context, time, fdelta);
     this.sprites.forEach(paintFn);
     this.layers.forEach(paintFn);
   }
   update(time, fdelta, data, context) {
-    this._runBehaviors(time, fdelta, data, context);
+    super.update(time, fdelta, data, context);
     let updateFn = (i, index, arr) => {
       i.destroy && arr.splice(index, 1);
       i.update &&　i.update(time, fdelta, data, context);
@@ -46,13 +40,15 @@ export default class Layer extends Sprite {
 }
 
 export class BaseLayer extends Layer {
-  isStatic = false;
-  constructor(name='', args={}, painter=null, behaviors={}){
-    super(`BASELAYER-${name}`, args, painter, behaviors);
-
+  constructor(name='', args={}){
+    super(`BASELAYER-${name}`, args);
+  }
+  update(time, fdelta, data, context) {
+    context.isStatic = true;
+    super.update(time, fdelta, data, context);
   }
   paint(context, time, fdelta, data){
-    if(!this.isStatic) {
+    if(!context.isStatic) {
       let {width, height} = this;
       context.clearRect(0, 0, width, height);
       super.paint(context, time, fdelta, data);

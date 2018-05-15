@@ -6,7 +6,7 @@ export default class Stage {
   constructor(name, options) {
     this.$canvas = this.elemInit(name, options);
     this.resetOptions(options, true);
-    this.stageInit();
+    this.stageInit(name);
     this.$layers = {};
   }
   resetOptions(options, fresh){
@@ -20,7 +20,7 @@ export default class Stage {
     canvasEle && (canvasEle.id = 'AC_' + name);
     return canvasEle;
   }
-  stageInit() {
+  stageInit(name) {
     let args = objectFilter(this._options, ['width', 'height']);
     this._stage = new BaseLayer(name, args);
     if(this.$canvas){

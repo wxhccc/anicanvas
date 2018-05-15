@@ -30,6 +30,10 @@
   function isNumeric(obj) {
     return (isType(obj, 'number') || isType(obj, 'string')) && !isNaN(obj - parseFloat(obj));
   }
+  /* json数据对比 */
+  function jsonEqual(obj1, obj2) {
+    return JSON.stringify(obj1) === JSON.stringify(obj2);
+  }
   /* 对象数组按某一键值排序 */
   function objKeySort() {
     var obj_arr = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
@@ -151,6 +155,22 @@
   * 精灵类，用于处理各种精灵对象的绘制和行为
   * 
   */
+  var relevantProps = {
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    velocityX: 0,
+    velocityY: 0,
+    rotateVelocity: 0,
+    rotate: 0,
+    opacity: 1,
+    visible: true,
+    animating: false,
+    zindex: 0,
+    destroy: false,
+    rotatePoint: { x: 0, y: 0 }
+  };
 
   var Sprite = function () {
     function Sprite() {
@@ -162,33 +182,45 @@
 
       this.name = name;
       this.painter = painter;
-      this.behaviors = behaviors;
-      this.top = 0;
-      this.left = 0;
-      this.width = 10;
-      this.height = 10;
-      this.velocityX = 0;
-      this.velocityY = 0;
-      this.rotateVelocity = 0;
-      this.rotate = 0;
-      this.opacity = 1;
-      this.visible = true;
-      this.animating = false;
-      this.zindex = 0;
-      this.destroy = false;
+      this.behaviors = isType(behaviors, 'object') ? behaviors : {};
+      this.injectRelevantProps();
       this.data = {};
       this.media = {};
       this._startTime = 0;
       this.initArgs(args);
+      this.updated = false;
       this.rotatePoint = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
-      return this;
     }
 
     createClass(Sprite, [{
       key: 'initArgs',
       value: function initArgs(args) {
-        Object.assign(this, args);
+        Object.assign(this, relevantProps, args);
         Object.assign(this.media, this.initMedia());
+      }
+    }, {
+      key: 'injectRelevantProps',
+      value: function injectRelevantProps() {
+        var _this2 = this;
+
+        Object.keys(relevantProps).forEach(function (name) {
+          var oldValue = void 0;
+          var _this = _this2;
+          Object.defineProperty(_this2, name, {
+            enumerable: true,
+            configurable: true,
+            get: function get$$1() {
+              return oldValue;
+            },
+            set: function set$$1(newValue) {
+              if (newValue === oldValue || jsonEqual(newValue, oldValue)) {
+                return;
+              }
+              oldValue = newValue;
+              _this.updated = true;
+            }
+          });
+        });
       }
     }, {
       key: 'initMedia',
@@ -221,6 +253,8 @@
       value: function update(time, fdelta, data, context) {
         !this._startTime && (this._startTime = time);
         this._runBehaviors(time, fdelta, data, context);
+        this.updated && (context.isStatic = false);
+        this.updated = false;
       }
     }, {
       key: '_runBehaviors',
@@ -278,23 +312,17 @@
       var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       classCallCheck(this, Layer);
 
-      var _this = possibleConstructorReturn(this, (Layer.__proto__ || Object.getPrototypeOf(Layer)).call(this));
+      var _this = possibleConstructorReturn(this, (Layer.__proto__ || Object.getPrototypeOf(Layer)).call(this, name, args, painter, behaviors));
 
       _this.layers = [];
       _this.sprites = [];
-      _this.name = name;
-      _this.painter = painter;
-      _this.behaviors = isType(behaviors, 'object') ? behaviors : {};
-      Object.assign(_this, args);
       return _this;
     }
 
     createClass(Layer, [{
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
-        if (this.painter && this.painter.paint) {
-          this.painter.paint(this, context, time, fdelta);
-        }
+        get(Layer.prototype.__proto__ || Object.getPrototypeOf(Layer.prototype), 'paint', this).call(this, context, time, fdelta, data);
         var paintFn = function paintFn(i) {
           return i.paint && i.paint(context, time, fdelta);
         };
@@ -304,7 +332,7 @@
     }, {
       key: 'update',
       value: function update(time, fdelta, data, context) {
-        this._runBehaviors(time, fdelta, data, context);
+        get(Layer.prototype.__proto__ || Object.getPrototypeOf(Layer.prototype), 'update', this).call(this, time, fdelta, data, context);
         var updateFn = function updateFn(i, index, arr) {
           i.destroy && arr.splice(index, 1);
           i.update && i.update(time, fdelta, data, context);
@@ -343,20 +371,20 @@
     function BaseLayer() {
       var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-      var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       classCallCheck(this, BaseLayer);
-
-      var _this2 = possibleConstructorReturn(this, (BaseLayer.__proto__ || Object.getPrototypeOf(BaseLayer)).call(this, 'BASELAYER-' + name, args, painter, behaviors));
-
-      _this2.isStatic = false;
-      return _this2;
+      return possibleConstructorReturn(this, (BaseLayer.__proto__ || Object.getPrototypeOf(BaseLayer)).call(this, 'BASELAYER-' + name, args));
     }
 
     createClass(BaseLayer, [{
+      key: 'update',
+      value: function update(time, fdelta, data, context) {
+        context.isStatic = true;
+        get(BaseLayer.prototype.__proto__ || Object.getPrototypeOf(BaseLayer.prototype), 'update', this).call(this, time, fdelta, data, context);
+      }
+    }, {
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
-        if (!this.isStatic) {
+        if (!context.isStatic) {
           var width = this.width,
               height = this.height;
 
@@ -397,7 +425,7 @@
 
       this.$canvas = this.elemInit(name, options);
       this.resetOptions(options, true);
-      this.stageInit();
+      this.stageInit(name);
       this.$layers = {};
     }
 
@@ -418,7 +446,7 @@
       }
     }, {
       key: 'stageInit',
-      value: function stageInit() {
+      value: function stageInit(name) {
         var args = objectFilter(this._options, ['width', 'height']);
         this._stage = new BaseLayer(name, args);
         if (this.$canvas) {
@@ -461,6 +489,22 @@
   * 精灵类，用于处理各种精灵对象的绘制和行为
   * 
   */
+  var relevantProps$1 = {
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    velocityX: 0,
+    velocityY: 0,
+    rotateVelocity: 0,
+    rotate: 0,
+    opacity: 1,
+    visible: true,
+    animating: false,
+    zindex: 0,
+    destroy: false,
+    rotatePoint: { x: 0, y: 0 }
+  };
 
   var Sprite$1 = function () {
     function Sprite() {
@@ -472,33 +516,45 @@
 
       this.name = name;
       this.painter = painter;
-      this.behaviors = behaviors;
-      this.top = 0;
-      this.left = 0;
-      this.width = 10;
-      this.height = 10;
-      this.velocityX = 0;
-      this.velocityY = 0;
-      this.rotateVelocity = 0;
-      this.rotate = 0;
-      this.opacity = 1;
-      this.visible = true;
-      this.animating = false;
-      this.zindex = 0;
-      this.destroy = false;
+      this.behaviors = isType(behaviors, 'object') ? behaviors : {};
+      this.injectRelevantProps();
       this.data = {};
       this.media = {};
       this._startTime = 0;
       this.initArgs(args);
+      this.updated = false;
       this.rotatePoint = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
-      return this;
     }
 
     createClass(Sprite, [{
       key: 'initArgs',
       value: function initArgs(args) {
-        Object.assign(this, args);
+        Object.assign(this, relevantProps$1, args);
         Object.assign(this.media, this.initMedia());
+      }
+    }, {
+      key: 'injectRelevantProps',
+      value: function injectRelevantProps() {
+        var _this2 = this;
+
+        Object.keys(relevantProps$1).forEach(function (name) {
+          var oldValue = void 0;
+          var _this = _this2;
+          Object.defineProperty(_this2, name, {
+            enumerable: true,
+            configurable: true,
+            get: function get$$1() {
+              return oldValue;
+            },
+            set: function set$$1(newValue) {
+              if (newValue === oldValue || jsonEqual(newValue, oldValue)) {
+                return;
+              }
+              oldValue = newValue;
+              _this.updated = true;
+            }
+          });
+        });
       }
     }, {
       key: 'initMedia',
@@ -531,6 +587,8 @@
       value: function update(time, fdelta, data, context) {
         !this._startTime && (this._startTime = time);
         this._runBehaviors(time, fdelta, data, context);
+        this.updated && (context.isStatic = false);
+        this.updated = false;
       }
     }, {
       key: '_runBehaviors',
