@@ -2,13 +2,7 @@
 
 $(function(){
   
-	let app = null,
-			jcanvas = $('#J_canvas'),
-      canvas = jcanvas[0],
-      t = 0;
-  if(canvas.getContext){
-  	app = new Invitation(jcanvas);
-  }
+	let app = new Invitation('#J-wrap');
   $(window).resize(function(){
     clearTimeout(t);
     t = setTimeout(function(){
@@ -25,11 +19,9 @@ function getPageSize(){
 
 /*页面逻辑类*/
 class Invitation{
-  constructor(jqcanvas){
-    this.jcanvas = jqcanvas;
-    this.canvas = jqcanvas[0];
+  constructor(elem){
     this.envInit();
-    this.stage = new Anicanvas(this.canvas, {...this.fullPageSize}); 
+    this.AC = new Anicanvas(elem, {...this.fullPageSize}); 
     this.pageInit();
   }
   envInit() {
@@ -38,22 +30,26 @@ class Invitation{
   }
   resize(){
   	this.envInit();
-  	this.stage.resize();
+  	this.AC.resize();
   }
   pageInit(){
     /*
     * 业务逻辑部分
     */
-    this.stage.start();
-    this.loadingMedia(preload_media);
+    //创建背景层
+    this.AC.createStage('background', {zIndex: 100});
+    this.AC.start();
+    //this.AC.$stage.pause();
+    //this.AC.$stages['background'].pause();
+    this.loadingMedia();
   }
   /*预加载资源*/
-  loadingMedia(preload_media){
+  loadingMedia(){
   	let preload_media = {
       'images': {'bg1':'./img/bg.jpg','music':'./img/music.png','p1_01':'./img/p1_01.png','p1_02_01':'./img/p1_02_01.png','p1_02_02':'./img/p1_02_02.png','arrow':'./img/arrow.png','p1_03_01':'./img/p1_03_01.png','p1_03_02':'./img/p1_03_02.png','p1_03_03':'./img/p1_03_03.png'},
       'audios':{'m1':'./media/bgm.mp3'}
     };
-  	this.stage.loadingMedia(preload_media, this.drawPage);
+  	this.AC.loadingMedia(preload_media, this.drawPage);
     this.drawLoadinProgress();
   }
   /*绘制进度条*/
@@ -67,11 +63,11 @@ class Invitation{
   		ctx.fillRect(left, top, width, height);
   		ctx.restore();
   	});
-  	let layer = this.stage.createLayer('progLayer', 'fullpage', bgPainter);
+  	let layer = this.AC.createLayer('progLayer', 'fullpage', bgPainter);
 
   	let progbarPaniter = new Anicanvas.Painter( (sprite, ctx, time, fdelta, data) => {
   		let {left, top, width, height} = sprite;
-  		let mediaload = this.stage.media.getImageProgress();
+  		let mediaload = this.AC.$media.getImageProgress();
   		let percent = mediaload[2];
   		ctx.save();
   		ctx.fillStyle = '#aeaeae';
@@ -83,13 +79,13 @@ class Invitation{
   	});
   	let progressBar = new Anicanvas.Sprite('progbar', {left: 1*rem, top: height-40, width: 13*rem, height: 20}, progbarPaniter);
   	layer.addSprite(progressBar);
-  	this.stage.addLayer(layer);
+  	this.AC.$stages['background'].addLayer(layer);
   }
 
   drawPage = () => {
     let rem = this.rem,
     		canvasSize = this.fullPageSize,
-    		{ media: {images, audios}, createLayer, addLayer } = this.stage,
+    		{ $media: {images, audios}, createLayer, addLayer } = this.AC,
     		pageLayer = createLayer('page', 'fullpage', new Anicanvas.ImagePainter(images['bg1']));
     
     /*音乐播放按钮*/
@@ -116,12 +112,11 @@ class Invitation{
       context.arc(this.left+this.width/2, this.top+this.height/2, 0, 2*Math.PI);
     });
     musicIco.media.play('music');
-    pageLayer.addSprite(musicIco);
+    
     
       
     /*对话框*/
-    let dailogPainter = new Anicanvas.Painter();
-    dailogPainter.paint = (sprite,context,time,fdelta,data) => {
+    let dailogPainter = new Anicanvas.Painter((sprite,context,time,fdelta,data) => {
       if(sprite.data.photo){
         dailogPainter.putPhoto(sprite, context);
       }
@@ -131,17 +126,33 @@ class Invitation{
         if(sprite.opacity < 1){
           context.globalAlpha = sprite.opacity > 0 ? sprite.opacity : 0;
         }
-        context.drawImage(dailog,0,0,dailog.width,398,sprite.left,sprite.top,sprite.width,sprite.height);
-        if(time>2500){  context.drawImage(dailog,0,400,dailog.width,129,sprite.left,sprite.top+sprite.height*0.2513,sprite.width,sprite.height*0.3241);
-          dailogPainter.getPhoto(sprite,context);
+        context.drawImage(dailog, 0, 0, dailog.width, 398, sprite.left, sprite.top, sprite.width, sprite.height);
+        if(time > 2500){  
+        	context.drawImage(dailog, 0, 400, dailog.width, 129, sprite.left, sprite.top+sprite.height*0.2513, sprite.width, sprite.height*0.3241);
+          //dailogPainter.getPhoto(sprite, context);
         }
         context.restore();
       }
-    };
-    let dailog = new Anicanvas.Sprite('dailog', {top:-20,left:2.64*rem,opacity:0,width:8.8*rem,height:6.76*rem},dailogPainter,{
-      'slideFadeDown' : new Anicanvas.Behavior({name:'slideFadeDown',timing:'ease',duration:800,delay:700, fillMode: 'forward',animation:{top:'+=20', opacity:1}})
     });
-    pageLayer.addSprite(dailog);
+    let dailog = new Anicanvas.Sprite('dailog', {
+    		top: -20, 
+    		left: 2.64*rem, 
+    		opacity: 0, 
+    		width: 8.8*rem, 
+    		height: 6.76*rem
+    	},
+    	dailogPainter, {
+      	'slideFadeDown' : new Anicanvas.Behavior({
+      		name: 'slideFadeDown',
+      		timing: 'ease',
+      		duration: 800,
+      		delay: 700, 
+      		fillMode: 'forward', 
+      		animation:{ top:'+=20', opacity: 1}
+      	})
+    	}
+    );
+
       
     /*箭头动画*/
     let arrowSlide = new Anicanvas.Behavior({
@@ -157,7 +168,7 @@ class Invitation{
     });
     let arrow = new Anicanvas.Sprite('arrow',{top:canvasSize.height-2*rem+8,left:6.92*rem,width:1.16*rem,opacity:0,height:1.16*rem},new Anicanvas.ImagePainter(images['arrow']),{'slideUpRepeat':arrowSlide})
     
-    pageLayer.addSprite(arrow);
+
       
     /*背景*/
     let midBgPanter = {
@@ -215,8 +226,7 @@ class Invitation{
     let peopleCell = [{x:0,y:0,w:268,h:384},{x:270,y:0,w:268,h:384},{x:540,y:0,w:268,h:384},{x:810,y:0,w:268,h:384}],
         peoplePainter = new Anicanvas.SheetPainter(images['p1_03_01'], peopleCell, {interval:500, autoruning:true, iteration:'infinite'})
     let people = new Anicanvas.Sprite('people', {top:6.27*rem,left:2.2*rem,width:10.72*rem,opacity:0,height:15.36*rem}, peoplePainter);
-    midBgLayer.addSprite(people);
-    pageLayer.addLayer(midBgLayer);
+
     /*固定图片*/
     let customPainter = {
       paint:function(sprite,context,time,data){
@@ -226,10 +236,16 @@ class Invitation{
     };
     let floor = new Anicanvas.Sprite('floor', {top:19.31*rem, left:2.745*rem, width:10.56*rem, height:2.88*rem, data:{ img: images['p1_03_03']}}, customPainter);
     let desc = new Anicanvas.Sprite('desc', {top:14.275*rem, left:3.84*rem, width:7.02*rem, height:5.12*rem, data:{img: images['p1_03_02']}}, customPainter);
+
+
+    midBgLayer.addSprite(people);
     midBgLayer.addSprite(desc);
-    console.log(midBgLayer)
+    this.AC.addSprite(musicIco, arrow);
+    addLayer(midBgLayer);
+
+    pageLayer.addSprite(dailog);
     pageLayer.addSprite(floor);
-		addLayer(pageLayer);
+    this.AC.$stages['background'].addLayer(pageLayer);
       
   }
     

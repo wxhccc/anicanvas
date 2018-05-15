@@ -7,6 +7,21 @@
   /*
   * 公共函数
   */
+  /* 创建dom元素 */
+  function createHtmlElement(tag, attrs, styles) {
+    var elem = document.createElement(tag);
+    isType(attrs, 'object') && Object.assign(elem, attrs);
+    isType(styles, 'object') && Object.assign(elem.style, styles);
+    return elem;
+  }
+  /* 创建dom元素 */
+  function objectFilter(obj, keys, def) {
+    var result = {};
+    isType(obj, 'object') && isType(keys, 'array') && keys.forEach(function (item) {
+      obj.hasOwnProperty(item) ? result[item] = obj[item] : def && (result[item] = undefined);
+    });
+    return result;
+  }
   /* 对象数组按某一键值排序 */
   function isType(value, type) {
     return typeof type === 'string' ? Object.prototype.toString.call(value).toLowerCase() === '[object ' + type.toLowerCase() + ']' : null;
@@ -38,6 +53,10 @@
   /* 角度转化弧度 */
   function deg2rad(deg) {
     return Math.PI / 180 * deg;
+  }
+  /* 错误处理 */
+  function errWarn(error) {
+    console.log(error);
   }
 
   var classCallCheck = function (instance, Constructor) {
@@ -77,6 +96,31 @@
     }
 
     return obj;
+  };
+
+  var get = function get(object, property, receiver) {
+    if (object === null) object = Function.prototype;
+    var desc = Object.getOwnPropertyDescriptor(object, property);
+
+    if (desc === undefined) {
+      var parent = Object.getPrototypeOf(object);
+
+      if (parent === null) {
+        return undefined;
+      } else {
+        return get(parent, property, receiver);
+      }
+    } else if ("value" in desc) {
+      return desc.value;
+    } else {
+      var getter = desc.get;
+
+      if (getter === undefined) {
+        return undefined;
+      }
+
+      return getter.call(receiver);
+    }
   };
 
   var inherits = function (subClass, superClass) {
@@ -134,6 +178,7 @@
       this.destroy = false;
       this.data = {};
       this.media = {};
+      this._startTime = 0;
       this.initArgs(args);
       this.rotatePoint = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
       return this;
@@ -174,12 +219,14 @@
     }, {
       key: 'update',
       value: function update(time, fdelta, data, context) {
+        !this._startTime && (this._startTime = time);
         this._runBehaviors(time, fdelta, data, context);
       }
     }, {
       key: '_runBehaviors',
       value: function _runBehaviors(time, fdelta, data, context) {
-        var behaviors = this.behaviors;
+        var behaviors = this.behaviors,
+            _startTime = this._startTime;
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -190,123 +237,10 @@
 
             var behavior = behaviors[i];
             if (behavior.delay) {
-              if (time - behavior.delay < 0) {
+              if (time - _startTime - behavior.delay < 0) {
                 continue;
               }
-              time = time - behavior.delay;
-            }
-            isType(behavior.execute, 'function') && behavior.execute(this, time, fdelta, data, context);
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
-        }
-      }
-    }]);
-    return Sprite;
-  }();
-
-  /*
-  * 精灵类，用于处理各种精灵对象的绘制和行为
-  * 
-  */
-
-  var Sprite$1 = function () {
-    function Sprite() {
-      var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-      var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-      var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      classCallCheck(this, Sprite);
-
-      this.name = name;
-      this.painter = painter;
-      this.behaviors = behaviors;
-      this.top = 0;
-      this.left = 0;
-      this.width = 10;
-      this.height = 10;
-      this.velocityX = 0;
-      this.velocityY = 0;
-      this.rotateVelocity = 0;
-      this.rotate = 0;
-      this.opacity = 1;
-      this.visible = true;
-      this.animating = false;
-      this.zindex = 0;
-      this.destroy = false;
-      this.data = {};
-      this.media = {};
-      this.initArgs(args);
-      this.rotatePoint = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
-      return this;
-    }
-
-    createClass(Sprite, [{
-      key: 'initArgs',
-      value: function initArgs(args) {
-        Object.assign(this, args);
-        Object.assign(this.media, this.initMedia());
-      }
-    }, {
-      key: 'initMedia',
-      value: function initMedia() {
-        return {
-          play: function play(name) {
-            this[name].play && this[name].play();
-          },
-          pause: function pause(name) {
-            this[name].pause && this[name].pause();
-          }
-        };
-      }
-      /*设置精灵路径*/
-
-    }, {
-      key: 'setPath',
-      value: function setPath(fn) {
-        isType(fn, 'function') && (this.path = fn);
-      }
-    }, {
-      key: 'paint',
-      value: function paint(context, time, fdelta, data) {
-        if (this.painter && this.painter.paint && this.visible) {
-          this.painter.paint(this, context, time, fdelta, data);
-        }
-      }
-    }, {
-      key: 'update',
-      value: function update(time, fdelta, data, context) {
-        this._runBehaviors(time, fdelta, data, context);
-      }
-    }, {
-      key: '_runBehaviors',
-      value: function _runBehaviors(time, fdelta, data, context) {
-        var behaviors = this.behaviors;
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-          for (var _iterator = Object.keys(behaviors)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var i = _step.value;
-
-            var behavior = behaviors[i];
-            if (behavior.delay) {
-              if (time - behavior.delay < 0) {
-                continue;
-              }
-              time = time - behavior.delay;
+              time = time - _startTime - behavior.delay;
             }
             isType(behavior.execute, 'function') && behavior.execute(this, time, fdelta, data, context);
           }
@@ -382,10 +316,10 @@
 
     }, {
       key: 'addLayer',
-      value: function addLayer(layer) {
+      value: function addLayer() {
         var layers = this.layers;
 
-        layers.push(layer);
+        layers.push.apply(layers, arguments);
         objKeySort(layers, 'zindex');
       }
       /*添加精灵*/
@@ -400,21 +334,244 @@
       }
     }]);
     return Layer;
-  }(Sprite$1);
+  }(Sprite);
 
 
   var BaseLayer = function (_Layer) {
     inherits(BaseLayer, _Layer);
 
     function BaseLayer() {
+      var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+      var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
       var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       classCallCheck(this, BaseLayer);
-      return possibleConstructorReturn(this, (BaseLayer.__proto__ || Object.getPrototypeOf(BaseLayer)).call(this, 'ANICANVAS', null, painter, behaviors));
+
+      var _this2 = possibleConstructorReturn(this, (BaseLayer.__proto__ || Object.getPrototypeOf(BaseLayer)).call(this, 'BASELAYER-' + name, args, painter, behaviors));
+
+      _this2.isStatic = false;
+      return _this2;
     }
 
+    createClass(BaseLayer, [{
+      key: 'paint',
+      value: function paint(context, time, fdelta, data) {
+        if (!this.isStatic) {
+          var width = this.width,
+              height = this.height;
+
+          context.clearRect(0, 0, width, height);
+          get(BaseLayer.prototype.__proto__ || Object.getPrototypeOf(BaseLayer.prototype), 'paint', this).call(this, context, time, fdelta, data);
+        }
+      }
+    }]);
     return BaseLayer;
   }(Layer);
+
+  var Stage = function () {
+    function Stage(name, options) {
+      var _this = this;
+
+      classCallCheck(this, Stage);
+      this._playing = true;
+
+      this.update = function (elapsed, fdelta, data) {
+        if (_this._playing) {
+          var context = _this._ctx;
+          _this._stage.update(elapsed, fdelta, data, context);
+          _this._stage.paint(context, elapsed, fdelta, data);
+        }
+      };
+
+      this.addLayer = function () {
+        var _stage;
+
+        (_stage = _this._stage).addLayer.apply(_stage, arguments);
+      };
+
+      this.addSprite = function () {
+        var _stage2;
+
+        (_stage2 = _this._stage).addSprite.apply(_stage2, arguments);
+      };
+
+      this.$canvas = this.elemInit(name, options);
+      this.resetOptions(options, true);
+      this.stageInit();
+      this.$layers = {};
+    }
+
+    createClass(Stage, [{
+      key: 'resetOptions',
+      value: function resetOptions(options, fresh) {
+        fresh || !this._options ? this._options = Object.assign({}, options) : Object.assign(this._options, options);
+      }
+    }, {
+      key: 'elemInit',
+      value: function elemInit(name, options) {
+        var attrs = objectFilter(options, ['width', 'height']);
+        var styles = Object.assign({}, options, { position: 'absolute' });
+        var canvasEle = isType(name, 'string') ? createHtmlElement('canvas', attrs, styles) : name;
+        canvasEle = isType(canvasEle, 'HTMLCanvasElement') ? canvasEle : null;
+        canvasEle && (canvasEle.id = 'AC_' + name);
+        return canvasEle;
+      }
+    }, {
+      key: 'stageInit',
+      value: function stageInit() {
+        var args = objectFilter(this._options, ['width', 'height']);
+        this._stage = new BaseLayer(name, args);
+        if (this.$canvas) {
+          this._ctx = this.$canvas.getContext('2d');
+        } else {
+          errWarn('no accessable canvas element!');
+        }
+      }
+    }, {
+      key: 'play',
+      value: function play() {
+        this._playing = true;
+      }
+    }, {
+      key: 'pause',
+      value: function pause() {
+        this._playing = false;
+      }
+    }, {
+      key: 'setCanvasSize',
+      value: function setCanvasSize() {
+        var _options = this._options,
+            width = _options.width,
+            height = _options.height;
+
+        if (isNumeric(width) && isNumeric(height)) {
+          Object.assign(this.$canvas, { width: width, height: height });
+        }
+      }
+    }, {
+      key: 'resize',
+      value: function resize() {
+        this.setCanvasSize();
+      }
+    }]);
+    return Stage;
+  }();
+
+  /*
+  * 精灵类，用于处理各种精灵对象的绘制和行为
+  * 
+  */
+
+  var Sprite$1 = function () {
+    function Sprite() {
+      var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+      var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+      classCallCheck(this, Sprite);
+
+      this.name = name;
+      this.painter = painter;
+      this.behaviors = behaviors;
+      this.top = 0;
+      this.left = 0;
+      this.width = 10;
+      this.height = 10;
+      this.velocityX = 0;
+      this.velocityY = 0;
+      this.rotateVelocity = 0;
+      this.rotate = 0;
+      this.opacity = 1;
+      this.visible = true;
+      this.animating = false;
+      this.zindex = 0;
+      this.destroy = false;
+      this.data = {};
+      this.media = {};
+      this._startTime = 0;
+      this.initArgs(args);
+      this.rotatePoint = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
+      return this;
+    }
+
+    createClass(Sprite, [{
+      key: 'initArgs',
+      value: function initArgs(args) {
+        Object.assign(this, args);
+        Object.assign(this.media, this.initMedia());
+      }
+    }, {
+      key: 'initMedia',
+      value: function initMedia() {
+        return {
+          play: function play(name) {
+            this[name].play && this[name].play();
+          },
+          pause: function pause(name) {
+            this[name].pause && this[name].pause();
+          }
+        };
+      }
+      /*设置精灵路径*/
+
+    }, {
+      key: 'setPath',
+      value: function setPath(fn) {
+        isType(fn, 'function') && (this.path = fn);
+      }
+    }, {
+      key: 'paint',
+      value: function paint(context, time, fdelta, data) {
+        if (this.painter && this.painter.paint && this.visible) {
+          this.painter.paint(this, context, time, fdelta, data);
+        }
+      }
+    }, {
+      key: 'update',
+      value: function update(time, fdelta, data, context) {
+        !this._startTime && (this._startTime = time);
+        this._runBehaviors(time, fdelta, data, context);
+      }
+    }, {
+      key: '_runBehaviors',
+      value: function _runBehaviors(time, fdelta, data, context) {
+        var behaviors = this.behaviors,
+            _startTime = this._startTime;
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = Object.keys(behaviors)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var i = _step.value;
+
+            var behavior = behaviors[i];
+            if (behavior.delay) {
+              if (time - _startTime - behavior.delay < 0) {
+                continue;
+              }
+              time = time - _startTime - behavior.delay;
+            }
+            isType(behavior.execute, 'function') && behavior.execute(this, time, fdelta, data, context);
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+      }
+    }]);
+    return Sprite;
+  }();
 
   /*
   * 绘制器基础类，用于提供基础的绘制器逻辑方便扩展
@@ -642,23 +799,25 @@
       value: function start() {
         var _this = this;
 
-        this.startTime = +new Date();
-        this.running = true;
-        this.play();
-        var animation = function animation(time) {
-          if (_this._playing) {
-            if (!_this.lastTime) {
-              _this.lastTime = time;
-            } else {
-              _this.time = time - _this.lastTime;
-              _this.elapsed += _this.time;
-              _this.lastTime = time;
-              _this._animation(_this.elapsed, _this.time);
+        if (!this.running) {
+          this.startTime = +new Date();
+          this.running = true;
+          this.play();
+          var animation = function animation(time) {
+            if (_this._playing) {
+              if (!_this.lastTime) {
+                _this.lastTime = time;
+              } else {
+                _this.time = time - _this.lastTime;
+                _this.elapsed += _this.time;
+                _this.lastTime = time;
+                _this._animation(_this.elapsed, _this.time);
+              }
             }
             _this._animHandle = window.requestAnimationFrame(animation);
-          }
-        };
-        this._animHandle = window.requestAnimationFrame(animation);
+          };
+          this._animHandle = window.requestAnimationFrame(animation);
+        }
       }
     }, {
       key: 'play',
@@ -860,18 +1019,14 @@
               time = newTime[0];
               fdelta = newTime[1];
             }
-            /*行为逻辑函数*/
-            this.executeFn(sprite, time, fdelta, data, context);
-          } else {
+          } else if (this.timing && this.duration) {
             /*时间轴扭曲逻辑*/
-            if (this.timing && this.duration) {
-              var _newTime = this._warpTime(time, this.duration);
-              time = _newTime[0];
-              fdelta = _newTime[1];
-            }
-            /*行为逻辑函数*/
-            this.executeFn(sprite, time, fdelta, data, context);
+            var _newTime = this._warpTime(time, this.duration);
+            time = _newTime[0];
+            fdelta = _newTime[1];
           }
+          /*行为逻辑函数*/
+          this.executeFn(sprite, time, fdelta, data, context);
         } else {
           isType(this.animateCallback, 'function') && this.animateCallback(sprite, context);
           delete sprite.behaviors[this.name]; //行为执行完销毁自身W
@@ -894,13 +1049,13 @@
       value: function _animationPrepare(sprite) {
         if (this.animation) {
           this._setAnimaData();
-          !this.animation['0'] && !this.animation['100'] && (this.animation = { 0: {}, 100: this.animation }); //处理单层数据
+          !this.animation['0'] && !this.animation['100'] && (this.animation = { 0: null, 100: this.animation }); //处理单层数据
           var animation = this.animation,
               _animaRuntime = this._animaRuntime;
 
 
           for (var i in animation) {
-            i == 0 && this._spriteAttrSet(sprite, animation[0], true);
+            i === 0 && animation[0] && this._spriteAttrSet(sprite, animation[0], true);
             _animaRuntime['framesTime'].push(i);
           }
           _animaRuntime['framesTime'].sort(function (a, b) {
@@ -955,6 +1110,7 @@
       key: '_attrChange',
       value: function _attrChange(sprite, time, fdelta, data, context) {
         var velocity = this._animaRuntime.velocity;
+
 
         for (var i in velocity) {
           sprite[i] += velocity[i] * fdelta;
@@ -1174,44 +1330,52 @@
   }();
 
   var Anicanvas = function () {
-    function Anicanvas(canvas, opts) {
+    function Anicanvas(elem, opts) {
       classCallCheck(this, Anicanvas);
 
       _initialiseProps.call(this);
 
-      this.canvas = this.elemInit(canvas);
+      this._elem = this.elemInit(elem);
       this._options = Object.assign({}, opts);
-      this.media = new MediaLoader();
-      this._raf = 0;
-      this._stage = new BaseLayer();
+      this._aniTimer = new AnimationTimer(this.animation);
       this.stageInit();
-      var animation = this.animation.bind(this);
-      this._aniTimer = new AnimationTimer(animation);
-      this.layers = {};
     }
 
     createClass(Anicanvas, [{
       key: 'elemInit',
-      value: function elemInit(canvas) {
-        var canvasEle = isType(canvas, 'string') ? document.getElementById(canvas) : canvas;
-        return isType(canvasEle, 'HTMLCanvasElement') ? canvasEle : null;
+      value: function elemInit(elem) {
+        return isType(elem, 'string') ? document.querySelector(elem) : null;
       }
     }, {
       key: 'stageInit',
       value: function stageInit() {
-        if (this.canvas) {
-          this._ctx = this.canvas.getContext('2d');
-          this.setCanvasSize();
+        if (this._elem) {
+          var _options = this._options,
+              width = _options.width,
+              height = _options.height;
+
+          this.createStage('MAIN', { width: width, height: height, zIndex: 1000 });
+          this.$stage = this.$stages.MAIN;
         } else {
-          this.errWarn('no accessable canvas element!');
+          errWarn('no accessable root element!');
         }
       }
     }, {
-      key: 'animation',
-      value: function animation(elapsed, fdelta) {
-        var ctx = this._ctx;
-        this._stage.update(elapsed, fdelta, null, ctx);
-        this._stage.paint(ctx, elapsed, fdelta);
+      key: 'createStage',
+      value: function createStage(name, options) {
+        if (isType(name, 'string') && !this.$stages[name]) {
+          var _options2 = this._options,
+              width = _options2.width,
+              height = _options2.height;
+
+          !options.width && (options.width = width);
+          !options.height && (options.height = height);
+          var stage = new Stage(name, options);
+          this.$stages[name] = stage;
+          this._stages.push(stage);
+          objKeySort(this._stages, 'zIndex');
+          this._elem.appendChild(stage.$canvas);
+        }
       }
     }, {
       key: 'start',
@@ -1236,9 +1400,9 @@
     }, {
       key: 'setCanvasSize',
       value: function setCanvasSize() {
-        var _options = this._options,
-            width = _options.width,
-            height = _options.height;
+        var _options3 = this._options,
+            width = _options3.width,
+            height = _options3.height;
 
         if (isNumeric(width) && isNumeric(height)) {
           Object.assign(this.canvas, { width: width, height: height });
@@ -1248,7 +1412,7 @@
       key: 'loadingMedia',
       value: function loadingMedia(mediaMap, callback) {
         if (mediaMap.images || mediaMap.audios) {
-          this.media.loadingMedia(mediaMap, callback);
+          this.$media.loadingMedia(mediaMap, callback);
         }
       }
     }, {
@@ -1272,17 +1436,14 @@
       }
     }, {
       key: 'resize',
-      value: function resize() {}
-    }, {
-      key: 'errWarn',
-      value: function errWarn(msg) {
-        console.log(msg);
+      value: function resize(sizes) {
+        isType(size, 'object') && Object.assign(this._elem, sizes);
       }
     }]);
     return Anicanvas;
   }();
 
-  Anicanvas.Sprite = Sprite;
+  Anicanvas.Sprite = Sprite$1;
   Anicanvas.Layer = Layer;
   Anicanvas.Painter = Painter;
   Anicanvas.ImagePainter = ImagePainter;
@@ -1292,6 +1453,19 @@
   var _initialiseProps = function _initialiseProps() {
     var _this = this;
 
+    this._RAF = 0;
+    this._stages = [];
+    this.$stages = {};
+    this.$stage = null;
+    this.$layers = {};
+    this.$media = new MediaLoader();
+
+    this.animation = function (elapsed, fdelta) {
+      _this._stages.forEach(function (stage) {
+        return stage.update(elapsed, fdelta);
+      });
+    };
+
     this.createLayer = function (name, options, painter) {
       if (isType(name, 'string')) {
         var opts = null;
@@ -1300,13 +1474,21 @@
         } else {
           opts = options === 'fullpage' ? { width: _this._options.width, height: _this._options.height } : options;
         }
-        _this.layers[name] = new Layer(name, opts, painter);
-        return _this.layers[name];
+        _this.$layers[name] = new Layer(name, opts, painter);
+        return _this.$layers[name];
       }
     };
 
-    this.addLayer = function (layer) {
-      _this._stage.addLayer(layer);
+    this.addLayer = function () {
+      var _$stage;
+
+      (_$stage = _this.$stage).addLayer.apply(_$stage, arguments);
+    };
+
+    this.addSprite = function () {
+      var _$stage2;
+
+      (_$stage2 = _this.$stage).addSprite.apply(_$stage2, arguments);
     };
   };
 

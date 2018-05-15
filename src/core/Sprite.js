@@ -23,6 +23,7 @@ export default class Sprite {
     this.destroy = false;
     this.data = {};
     this.media = {};
+    this._startTime = 0;
     this.initArgs(args);
     this.rotatePoint = {x:this.left+this.width/2,y:this.top+this.height/2};
     return this;
@@ -51,18 +52,19 @@ export default class Sprite {
     }
   }
   update(time, fdelta, data, context) {
+    !this._startTime && (this._startTime = time);
     this._runBehaviors(time, fdelta, data, context);
   }
 
   _runBehaviors(time, fdelta, data, context) {
-    let behaviors = this.behaviors;
+    let {behaviors, _startTime} = this;
     for(let i of Object.keys(behaviors)){
       let behavior = behaviors[i];
       if(behavior.delay){
-        if(time - behavior.delay < 0){
+        if(time - _startTime - behavior.delay < 0){
           continue;
         }
-        time = time - behavior.delay;
+        time = time - _startTime - behavior.delay;
       }
       isType(behavior.execute, 'function') && behavior.execute(this, time, fdelta, data, context);
     }

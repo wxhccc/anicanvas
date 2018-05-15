@@ -32,9 +32,9 @@ export default class Layer extends Sprite {
     this.layers.forEach(updateFn);
   }
   /*添加精灵*/
-  addLayer(layer){
+  addLayer(...layer){
     let { layers } = this;
-    layers.push(layer);
+    layers.push(...layer);
     objKeySort(layers, 'zindex');
   }
   /*添加精灵*/
@@ -46,7 +46,16 @@ export default class Layer extends Sprite {
 }
 
 export class BaseLayer extends Layer {
+  isStatic = false;
   constructor(name='', args={}, painter=null, behaviors={}){
-    super('ANICANVAS', null, painter, behaviors);
+    super(`BASELAYER-${name}`, args, painter, behaviors);
+
+  }
+  paint(context, time, fdelta, data){
+    if(!this.isStatic) {
+      let {width, height} = this;
+      context.clearRect(0, 0, width, height);
+      super.paint(context, time, fdelta, data);
+    }
   }
 }

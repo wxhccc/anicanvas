@@ -1,36 +1,47 @@
-import {Sprite, Layer, Painter, ImagePainter, SheetPainter, Behavior, AnimationTimer, MediaLoader} from './core';
+import {Stage, Sprite, Layer, Painter, ImagePainter, SheetPainter, Behavior, AnimationTimer, MediaLoader} from './core';
 import {BaseLayer} from './core/Layer';
-import {isType, isNumeric} from './utils';
+import {isType, isNumeric, objKeySort, errWarn} from './utils';
 
 export default class Anicanvas {
-  constructor(canvas, opts) {
-    this.canvas = this.elemInit(canvas);
+  _RAF = 0;
+  _stages = [];
+  $stages = {};
+  $stage = null;
+  $layers = {};
+  $media = new MediaLoader();
+  constructor(elem, opts) {
+    this._elem = this.elemInit(elem);
     this._options = Object.assign({}, opts);
-    this.media = new MediaLoader();
-    this._raf = 0;
-    this._stage = new BaseLayer();
+    this._aniTimer = new AnimationTimer(this.animation);
     this.stageInit();
-    let animation = this.animation.bind(this);
-    this._aniTimer = new AnimationTimer(animation);
-    this.layers = {};
   }
-  elemInit(canvas) {
-    let canvasEle = isType(canvas, 'string') ? document.getElementById(canvas) : canvas;
-    return isType(canvasEle, 'HTMLCanvasElement') ? canvasEle : null;
+  elemInit(elem) {
+    return isType(elem, 'string') ? document.querySelector(elem) : null;
   }
   stageInit() {
-    if(this.canvas){
-      this._ctx = this.canvas.getContext('2d');
-      this.setCanvasSize();
+    if(this._elem){
+      let {width, height} = this._options;
+      this.createStage('MAIN', {width, height, zIndex: 1000});
+      this.$stage = this.$stages.MAIN;
     }
     else {
-      this.errWarn('no accessable canvas element!');
+      errWarn('no accessable root element!');
     }
   }
-  animation(elapsed, fdelta) {
-    let ctx = this._ctx;
-    this._stage.update(elapsed, fdelta, null, ctx);
-    this._stage.paint(ctx, elapsed, fdelta);
+  createStage(name, options){
+    if(isType(name, 'string') && !this.$stages[name]){
+      let {width, height} = this._options;
+      !options.width && (options.width = width);
+      !options.height && (options.height = height);
+      let stage = new Stage(name, options);
+      this.$stages[name] = stage;
+      this._stages.push(stage);
+      objKeySort(this._stages, 'zIndex');
+      this._elem.appendChild(stage.$canvas);
+    }
+  }
+  animation = (elapsed, fdelta) => {
+    this._stages.forEach(stage => (stage.update(elapsed, fdelta)));
   }
   start(){
     this._aniTimer.start();
@@ -52,7 +63,7 @@ export default class Anicanvas {
   }
   loadingMedia(mediaMap, callback) {
     if(mediaMap.images || mediaMap.audios){
-      this.media.loadingMedia(mediaMap, callback);
+      this.$media.loadingMedia(mediaMap, callback);
     }
   }
   createPainter(type, ...options){
@@ -77,17 +88,18 @@ export default class Anicanvas {
       else{
         opts = options === 'fullpage' ? {width: this._options.width, height: this._options.height} : options;
       }
-      this.layers[name] = new Layer(name, opts, painter);
-      return this.layers[name];
+      this.$layers[name] = new Layer(name, opts, painter);
+      return this.$layers[name];
     }
   }
-  addLayer = (layer) => {
-    this._stage.addLayer(layer);
+  addLayer = (...layer) => {
+    this.$stage.addLayer(...layer);
+  }  
+  addSprite = (...sprite) => {
+    this.$stage.addSprite(...sprite);
   }
-  resize() {
-  }
-  errWarn(msg) {
-    console.log(msg);
+  resize(sizes) {
+    isType(size, 'object') && Object.assign(this._elem, sizes);
   }
 
   

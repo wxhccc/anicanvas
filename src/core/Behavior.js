@@ -27,7 +27,6 @@ export default class Behavior {
     this._animaProps = this._animaInitProps();  
     this._animaRuntime = null;   //动画运行环境数据
     /*初始化函数*/
-    
   }
   _animaInitProps(){
     return {         //动画初始属性
@@ -74,19 +73,16 @@ export default class Behavior {
           time = newTime[0];
           fdelta = newTime[1];
         }
-        /*行为逻辑函数*/
-        this.executeFn(sprite, time, fdelta, data, context);
+        
       }
-      else{
+      else if(this.timing && this.duration){
         /*时间轴扭曲逻辑*/
-        if(this.timing && this.duration){
-          let newTime = this._warpTime(time, this.duration);
-          time = newTime[0];
-          fdelta = newTime[1];
-        }
-        /*行为逻辑函数*/
-        this.executeFn(sprite, time, fdelta, data, context);
+        let newTime = this._warpTime(time, this.duration);
+        time = newTime[0];
+        fdelta = newTime[1];
       }
+      /*行为逻辑函数*/
+      this.executeFn(sprite, time, fdelta, data, context);
     }
     else{
       isType(this.animateCallback, 'function') && this.animateCallback(sprite, context);
@@ -104,11 +100,11 @@ export default class Behavior {
   _animationPrepare(sprite) {
     if(this.animation){
       this._setAnimaData();
-      (!this.animation['0'] && !this.animation['100']) && (this.animation = {0: {}, 100: this.animation}); //处理单层数据
+      (!this.animation['0'] && !this.animation['100']) && (this.animation = {0: null, 100: this.animation}); //处理单层数据
       let {animation, _animaRuntime} = this;
       
       for(let i in animation){
-        (i == 0 ) && this._spriteAttrSet(sprite, animation[0], true);
+        (i === 0 && animation[0]) && this._spriteAttrSet(sprite, animation[0], true);
         _animaRuntime['framesTime'].push(i); 
       }
       _animaRuntime['framesTime'].sort((a, b)=>(a - b));
@@ -122,7 +118,7 @@ export default class Behavior {
   * @param time 行为运行时间
   */
   _warpTime(time,duration){
-    let percent = time/duration;
+    let percent = time / duration;
     let warpTime = this.timing(percent)/percent*time;
     !this.lastTime && (this.lastTime = warpTime);
     let warp_fdelta = warpTime - this.lastTime;
@@ -150,6 +146,7 @@ export default class Behavior {
   /*属性变换函数*/
   _attrChange(sprite, time, fdelta, data, context){
     let { velocity } = this._animaRuntime;
+
     for(let i in velocity){
       sprite[i] += velocity[i] * fdelta;
     }

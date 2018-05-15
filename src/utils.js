@@ -1,6 +1,21 @@
 /*
 * 公共函数
 */
+/* 创建dom元素 */
+export function createHtmlElement(tag, attrs, styles){
+  let elem = document.createElement(tag);
+  isType(attrs, 'object') && Object.assign(elem, attrs);
+  isType(styles, 'object') && Object.assign(elem.style, styles);
+  return elem;
+}
+/* 创建dom元素 */
+export function objectFilter(obj, keys, def){
+  let result = {};
+  isType(obj, 'object') && isType(keys, 'array') && keys.forEach(item => {
+    obj.hasOwnProperty(item) ? (result[item] = obj[item]) : (def && (result[item] = undefined));
+  })
+  return result;
+}
 /* 对象数组按某一键值排序 */
 export function isType(value, type){
   return (typeof type === 'string') ? Object.prototype.toString.call(value).toLowerCase() === `[object ${type.toLowerCase()}]` : null;
@@ -56,4 +71,8 @@ export function cubicBezier(p1_x,p1_y,p2_x,p2_y){
 /* 约等于函数 */
 export function approximate(comp1,comp2,precision=0){
   return Math.abs(comp1 - comp2) < Math.pow(10,precision);
+}
+/* 错误处理 */
+export function errWarn(error) {
+  console.log(error);
 }

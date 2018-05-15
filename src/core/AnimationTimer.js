@@ -15,25 +15,26 @@ export default class AnimationTimer {
     this._animHandle = null;
   }
   start() {
-    this.startTime = +new Date();
-    this.running = true;
-    this.play();
-    let animation = (time) => {
-      if(this._playing){
-        if(!this.lastTime){
-          this.lastTime = time;
-        }
-        else{
-          this.time = time - this.lastTime;
-          this.elapsed += this.time;
-          this.lastTime = time;
-          this._animation(this.elapsed, this.time);
+    if(!this.running) {
+      this.startTime = +new Date();
+      this.running = true;
+      this.play();
+      let animation = (time) => {
+        if(this._playing){
+          if(!this.lastTime){
+            this.lastTime = time;
+          }
+          else{
+            this.time = time - this.lastTime;
+            this.elapsed += this.time;
+            this.lastTime = time;
+            this._animation(this.elapsed, this.time);
+          }
         }
         this._animHandle = window.requestAnimationFrame(animation);
       }
+      this._animHandle = window.requestAnimationFrame(animation);
     }
-    this._animHandle = window.requestAnimationFrame(animation);
-    
   }
   play() {
     this._playing = true;

@@ -1,18 +1,9 @@
-import Sprite from './Sprite'
-import Layer from './Layer'
-import Painter from './Painter'
-import {ImagePainter, SheetPainter} from './CommonPainter'
-import Behavior from './Behavior'
-import AnimationTimer from './AnimationTimer'
-import MediaLoader from './MediaLoader'
+export Stage from './Stage'
+export Sprite from './Sprite'
+export Layer from './Layer'
+export Painter from './Painter'
+export {ImagePainter, SheetPainter} from './CommonPainter'
+export Behavior from './Behavior'
+export AnimationTimer from './AnimationTimer'
+export MediaLoader from './MediaLoader'
 
-export {
-  Sprite,
-  Layer,
-  Painter,
-  ImagePainter,
-  SheetPainter,
-  Behavior,
-  AnimationTimer,
-  MediaLoader
-}
