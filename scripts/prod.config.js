@@ -1,9 +1,14 @@
 import config from './base.config';
 import { merge } from 'lodash';
 
+const uglify = require('rollup-plugin-uglify')
+
 export default merge(config, {
   output: {
-  	file: 'dist/anicanvas.min.js'
-  }
-
+  	format: 'cjs',
+  	file: 'dist/anicanvas.common.js'
+  },
+  plugins: [
+  	uglify()
+  ]
 });

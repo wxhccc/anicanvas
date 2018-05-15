@@ -72,7 +72,11 @@ export default class Sprite {
   }
   paint(context, time, fdelta, data) {
     if(this.painter && this.painter.paint && this.visible){
+      let {left, top} = this.$parent || {left: 0, top: 0};
+      context.save();
+      context.translate(left, top);
       this.painter.paint(this, context, time, fdelta, data);
+      context.restore();
     }
   }
   update(time, fdelta, data, context) {
