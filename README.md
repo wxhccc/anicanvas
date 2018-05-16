@@ -3,8 +3,10 @@
 
 # 安装
 npm: npm install anicanvas
+
 本地：将dist目录下的anicanvas.min.js放到使用目录
-sdn: 暂无
+
+sdn: https://cdn.jsdelivr.net/npm/anicanvas@0.0.2/dist/anicanvas.js
 
 # 使用说明
 简单的实例
@@ -40,3 +42,7 @@ const ball = new Anicanvas.Sprite('ball', {width: 20, height: 20}, ballPainter, 
 app.addSprite(ball);
 app.start();
 ```
+
+稍微复杂的实例可以看demo, 里面涉及到目前此库已有功能，包括资源加载和管理，分层绘制，多舞台层叠，低频次舞台惰化。
+
+ps：目前还没有事件处理模块，后续会添加
