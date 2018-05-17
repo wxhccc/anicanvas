@@ -4,65 +4,6 @@
   (global.Anicanvas = factory());
 }(this, (function () { 'use strict';
 
-  /*
-  * 公共函数
-  */
-  /* 创建dom元素 */
-  function createHtmlElement(tag, attrs, styles) {
-    var elem = document.createElement(tag);
-    isType(attrs, 'object') && Object.assign(elem, attrs);
-    isType(styles, 'object') && Object.assign(elem.style, styles);
-    return elem;
-  }
-  /* 创建dom元素 */
-  function objectFilter(obj, keys, def) {
-    var result = {};
-    isType(obj, 'object') && isType(keys, 'array') && keys.forEach(function (item) {
-      obj.hasOwnProperty(item) ? result[item] = obj[item] : def && (result[item] = undefined);
-    });
-    return result;
-  }
-  /* 对象数组按某一键值排序 */
-  function isType(value, type) {
-    return typeof type === 'string' ? Object.prototype.toString.call(value).toLowerCase() === '[object ' + type.toLowerCase() + ']' : null;
-  }
-  /* 判断变量是否是数字或数字字符串 */
-  function isNumeric(obj) {
-    return (isType(obj, 'number') || isType(obj, 'string')) && !isNaN(obj - parseFloat(obj));
-  }
-  /* json数据对比 */
-  function jsonEqual(obj1, obj2) {
-    return JSON.stringify(obj1) === JSON.stringify(obj2);
-  }
-  /* 对象数组按某一键值排序 */
-  function objKeySort() {
-    var obj_arr = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-    var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-    var desc = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-    return obj_arr.sort(function (a, b) {
-      if (a[key] !== undefined && b[key] !== undefined) {
-        if (a[key] < b[key]) {
-          return desc ? 1 : -1;
-        } else if (a[key] > b[key]) {
-          return desc ? -1 : 1;
-        } else {
-          return 0;
-        }
-      } else {
-        return 0;
-      }
-    });
-  }
-  /* 角度转化弧度 */
-  function deg2rad(deg) {
-    return Math.PI / 180 * deg;
-  }
-  /* 错误处理 */
-  function errWarn(error) {
-    console.log(error);
-  }
-
   var classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -152,6 +93,89 @@
   };
 
   /*
+  * 媒体文件类，用于处理媒体对象的行为
+  * 
+  */
+
+  var Media = function () {
+    function Media() {
+      classCallCheck(this, Media);
+    }
+
+    createClass(Media, [{
+      key: "play",
+      value: function play(name) {
+        this[name] && this[name].play && this[name].play();
+      }
+    }, {
+      key: "pause",
+      value: function pause(name) {
+        this[name] && this[name].pause && this[name].pause();
+      }
+    }]);
+    return Media;
+  }();
+
+  /*
+  * 公共函数
+  */
+  /* 创建dom元素 */
+  function createHtmlElement(tag, attrs, styles) {
+    var elem = document.createElement(tag);
+    isType(attrs, 'object') && Object.assign(elem, attrs);
+    isType(styles, 'object') && Object.assign(elem.style, styles);
+    return elem;
+  }
+  /* 创建dom元素 */
+  function objectFilter(obj, keys, def) {
+    var result = {};
+    isType(obj, 'object') && isType(keys, 'array') && keys.forEach(function (item) {
+      obj.hasOwnProperty(item) ? result[item] = obj[item] : def && (result[item] = undefined);
+    });
+    return result;
+  }
+  /* 对象数组按某一键值排序 */
+  function isType(value, type) {
+    return typeof type === 'string' ? Object.prototype.toString.call(value).toLowerCase() === '[object ' + type.toLowerCase() + ']' : null;
+  }
+  /* 判断变量是否是数字或数字字符串 */
+  function isNumeric(obj) {
+    return (isType(obj, 'number') || isType(obj, 'string')) && !isNaN(obj - parseFloat(obj));
+  }
+  /* json数据对比 */
+  function jsonEqual(obj1, obj2) {
+    return JSON.stringify(obj1) === JSON.stringify(obj2);
+  }
+  /* 对象数组按某一键值排序 */
+  function objKeySort() {
+    var obj_arr = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+    var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    var desc = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+    return obj_arr.sort(function (a, b) {
+      if (a[key] !== undefined && b[key] !== undefined) {
+        if (a[key] < b[key]) {
+          return desc ? 1 : -1;
+        } else if (a[key] > b[key]) {
+          return desc ? -1 : 1;
+        } else {
+          return 0;
+        }
+      } else {
+        return 0;
+      }
+    });
+  }
+  /* 角度转化弧度 */
+  function deg2rad(deg) {
+    return Math.PI / 180 * deg;
+  }
+  /* 错误处理 */
+  function errWarn(error) {
+    console.log(error);
+  }
+
+  /*
   * 精灵类，用于处理各种精灵对象的绘制和行为
   * 
   */
@@ -179,24 +203,24 @@
       var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       classCallCheck(this, Sprite);
+      this._startTime = 0;
+      this._autoRP = true;
+      this._updated = false;
+      this.$data = {};
+      this.$media = new Media();
+      this.TYPE = 'sprite';
 
       this.name = name;
-      this.painter = painter;
+      this._painter = painter;
       this.behaviors = isType(behaviors, 'object') ? behaviors : {};
       this.injectRelevantProps();
-      this.data = {};
-      this.media = {};
-      this._startTime = 0;
       this.initArgs(args);
-      this.updated = false;
-      this.rotatePoint = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
     }
 
     createClass(Sprite, [{
       key: 'initArgs',
       value: function initArgs(args) {
-        Object.assign(this, relevantProps, args);
-        Object.assign(this.media, this.initMedia());
+        Object.assign(this, args);
       }
     }, {
       key: 'injectRelevantProps',
@@ -204,7 +228,7 @@
         var _this2 = this;
 
         Object.keys(relevantProps).forEach(function (name) {
-          var oldValue = void 0;
+          var oldValue = relevantProps[name];
           var _this = _this2;
           Object.defineProperty(_this2, name, {
             enumerable: true,
@@ -213,26 +237,36 @@
               return oldValue;
             },
             set: function set$$1(newValue) {
+              _this._checkAutoRp(name, newValue);
               if (newValue === oldValue || jsonEqual(newValue, oldValue)) {
                 return;
               }
               oldValue = newValue;
+              _this._autoRotatePoint(name);
               _this.updated = true;
             }
           });
         });
       }
     }, {
-      key: 'initMedia',
-      value: function initMedia() {
-        return {
-          play: function play(name) {
-            this[name].play && this[name].play();
-          },
-          pause: function pause(name) {
-            this[name].pause && this[name].pause();
-          }
-        };
+      key: '_checkAutoRp',
+      value: function _checkAutoRp(name, newValue) {
+        if (name === 'rotatePoint' && isType(newValue, 'object')) {
+          !newValue.auto ? this._autoRP = false : delete newValue['auto'];
+        }
+      }
+    }, {
+      key: '_autoRotatePoint',
+      value: function _autoRotatePoint(name) {
+        if (!this._autoRP) return;
+        if (['left', 'top', 'width', 'height'].indexOf(name) >= 0) {
+          this.rotatePoint = this._spriteRP();
+        }
+      }
+    }, {
+      key: '_spriteRP',
+      value: function _spriteRP() {
+        return { x: this.left + this.width / 2, y: this.top + this.height / 2, auto: true };
       }
       /*设置精灵路径*/
 
@@ -244,14 +278,14 @@
     }, {
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
-        if (this.painter && this.painter.paint && this.visible) {
+        if (this._painter && this._painter.paint && this.visible) {
           var _ref = this.$parent || { left: 0, top: 0 },
               left = _ref.left,
               top = _ref.top;
 
           context.save();
           context.translate(left, top);
-          this.painter.paint(this, context, time, fdelta, data);
+          this._painter.paint(this, context, time, fdelta, data);
           context.restore();
         }
       }
@@ -321,8 +355,9 @@
 
       var _this = possibleConstructorReturn(this, (Layer.__proto__ || Object.getPrototypeOf(Layer)).call(this, name, args, painter, behaviors));
 
-      _this.layers = [];
-      _this.sprites = [];
+      _this.TYPE = 'layer';
+
+      _this.children = [];
       return _this;
     }
 
@@ -330,60 +365,37 @@
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
         get(Layer.prototype.__proto__ || Object.getPrototypeOf(Layer.prototype), 'paint', this).call(this, context, time, fdelta, data);
-        var paintFn = function paintFn(i) {
+        this.children.forEach(function (i) {
           return i.paint && i.paint(context, time, fdelta);
-        };
-        this.sprites.forEach(paintFn);
-        this.layers.forEach(paintFn);
+        });
       }
     }, {
       key: 'update',
       value: function update(time, fdelta, data, context) {
         get(Layer.prototype.__proto__ || Object.getPrototypeOf(Layer.prototype), 'update', this).call(this, time, fdelta, data, context);
-        var updateFn = function updateFn(i, index, arr) {
+        this.children.forEach(function (i, index, arr) {
           i.destroy && arr.splice(index, 1);
           i.update && i.update(time, fdelta, data, context);
-        };
-        this.sprites.forEach(updateFn);
-        this.layers.forEach(updateFn);
+        });
       }
-      /*添加精灵*/
+      /* 添加子元素，精灵或层 */
 
     }, {
-      key: 'addLayer',
-      value: function addLayer() {
+      key: 'append',
+      value: function append() {
         var _this2 = this;
 
-        var layers = this.layers;
+        var children = this.children;
 
-        for (var _len = arguments.length, layer = Array(_len), _key = 0; _key < _len; _key++) {
-          layer[_key] = arguments[_key];
+        for (var _len = arguments.length, child = Array(_len), _key = 0; _key < _len; _key++) {
+          child[_key] = arguments[_key];
         }
 
-        layers.push.apply(layers, layer);
-        layer.forEach(function (item) {
+        children.push.apply(children, child);
+        child.forEach(function (item) {
           return item.$parent = _this2;
         });
-        objKeySort(layers, 'zindex');
-      }
-      /*添加精灵*/
-
-    }, {
-      key: 'addSprite',
-      value: function addSprite() {
-        var _this3 = this;
-
-        var sprites = this.sprites;
-
-        for (var _len2 = arguments.length, sprite = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-          sprite[_key2] = arguments[_key2];
-        }
-
-        sprites.push.apply(sprites, sprite);
-        sprite.forEach(function (item) {
-          return item.$parent = _this3;
-        });
-        objKeySort(sprites, 'zindex');
+        objKeySort(children, 'zindex');
       }
     }]);
     return Layer;
@@ -436,16 +448,10 @@
         }
       };
 
-      this.addLayer = function () {
+      this.append = function () {
         var _stage;
 
-        (_stage = _this._stage).addLayer.apply(_stage, arguments);
-      };
-
-      this.addSprite = function () {
-        var _stage2;
-
-        (_stage2 = _this._stage).addSprite.apply(_stage2, arguments);
+        (_stage = _this._stage).append.apply(_stage, arguments);
       };
 
       this.$canvas = this.elemInit(name, options);
@@ -538,24 +544,24 @@
       var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       classCallCheck(this, Sprite);
+      this._startTime = 0;
+      this._autoRP = true;
+      this._updated = false;
+      this.$data = {};
+      this.$media = new Media();
+      this.TYPE = 'sprite';
 
       this.name = name;
-      this.painter = painter;
+      this._painter = painter;
       this.behaviors = isType(behaviors, 'object') ? behaviors : {};
       this.injectRelevantProps();
-      this.data = {};
-      this.media = {};
-      this._startTime = 0;
       this.initArgs(args);
-      this.updated = false;
-      this.rotatePoint = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
     }
 
     createClass(Sprite, [{
       key: 'initArgs',
       value: function initArgs(args) {
-        Object.assign(this, relevantProps$1, args);
-        Object.assign(this.media, this.initMedia());
+        Object.assign(this, args);
       }
     }, {
       key: 'injectRelevantProps',
@@ -563,7 +569,7 @@
         var _this2 = this;
 
         Object.keys(relevantProps$1).forEach(function (name) {
-          var oldValue = void 0;
+          var oldValue = relevantProps$1[name];
           var _this = _this2;
           Object.defineProperty(_this2, name, {
             enumerable: true,
@@ -572,26 +578,36 @@
               return oldValue;
             },
             set: function set$$1(newValue) {
+              _this._checkAutoRp(name, newValue);
               if (newValue === oldValue || jsonEqual(newValue, oldValue)) {
                 return;
               }
               oldValue = newValue;
+              _this._autoRotatePoint(name);
               _this.updated = true;
             }
           });
         });
       }
     }, {
-      key: 'initMedia',
-      value: function initMedia() {
-        return {
-          play: function play(name) {
-            this[name].play && this[name].play();
-          },
-          pause: function pause(name) {
-            this[name].pause && this[name].pause();
-          }
-        };
+      key: '_checkAutoRp',
+      value: function _checkAutoRp(name, newValue) {
+        if (name === 'rotatePoint' && isType(newValue, 'object')) {
+          !newValue.auto ? this._autoRP = false : delete newValue['auto'];
+        }
+      }
+    }, {
+      key: '_autoRotatePoint',
+      value: function _autoRotatePoint(name) {
+        if (!this._autoRP) return;
+        if (['left', 'top', 'width', 'height'].indexOf(name) >= 0) {
+          this.rotatePoint = this._spriteRP();
+        }
+      }
+    }, {
+      key: '_spriteRP',
+      value: function _spriteRP() {
+        return { x: this.left + this.width / 2, y: this.top + this.height / 2, auto: true };
       }
       /*设置精灵路径*/
 
@@ -603,14 +619,14 @@
     }, {
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
-        if (this.painter && this.painter.paint && this.visible) {
+        if (this._painter && this._painter.paint && this.visible) {
           var _ref = this.$parent || { left: 0, top: 0 },
               left = _ref.left,
               top = _ref.top;
 
           context.save();
           context.translate(left, top);
-          this.painter.paint(this, context, time, fdelta, data);
+          this._painter.paint(this, context, time, fdelta, data);
           context.restore();
         }
       }
@@ -1526,8 +1542,8 @@
       }
     }, {
       key: 'resize',
-      value: function resize(sizes) {
-        isType(size, 'object') && Object.assign(this._elem, sizes);
+      value: function resize(size) {
+        isType(size, 'object') && Object.assign(this._elem, size);
       }
     }]);
     return Anicanvas;
@@ -1569,16 +1585,10 @@
       }
     };
 
-    this.addLayer = function () {
+    this.append = function () {
       var _$stage;
 
-      (_$stage = _this.$stage).addLayer.apply(_$stage, arguments);
-    };
-
-    this.addSprite = function () {
-      var _$stage2;
-
-      (_$stage2 = _this.$stage).addSprite.apply(_$stage2, arguments);
+      (_$stage = _this.$stage).append.apply(_$stage, arguments);
     };
   };
 

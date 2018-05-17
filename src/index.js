@@ -92,14 +92,12 @@ export default class Anicanvas {
       return this.$layers[name];
     }
   }
-  addLayer = (...layer) => {
-    this.$stage.addLayer(...layer);
+  append = (...child) => {
+    this.$stage.append(...child);
   }  
-  addSprite = (...sprite) => {
-    this.$stage.addSprite(...sprite);
-  }
-  resize(sizes) {
-    isType(size, 'object') && Object.assign(this._elem, sizes);
+
+  resize(size) {
+    isType(size, 'object') && Object.assign(this._elem, size);
   }
 
   

@@ -2,7 +2,8 @@
 
 $(function(){
   
-	let app = new Invitation('#J-wrap');
+	let t,
+      app = new Invitation('#J-wrap');
   $(window).resize(function(){
     clearTimeout(t);
     t = setTimeout(function(){
@@ -42,6 +43,7 @@ class Invitation{
     //this.AC.$stage.pause();
     //this.AC.$stages['background'].pause();
     this.loadingMedia();
+    //this.test();
   }
   /*预加载资源*/
   loadingMedia(){
@@ -66,26 +68,34 @@ class Invitation{
   	let layer = this.AC.createLayer('progLayer', 'fullpage', bgPainter);
 
   	let progbarPaniter = new Anicanvas.Painter( (sprite, ctx, time, fdelta, data) => {
-  		let {left, top, width, height} = sprite;
-  		let mediaload = this.AC.$media.getImageProgress();
-  		let percent = mediaload[2];
+  		let {left, top, width, height, $data: {percent}} = sprite;
   		ctx.save();
   		ctx.fillStyle = '#aeaeae';
   		ctx.fillRect(left, top, width, height);
   		ctx.fillStyle = '#999999';
   		ctx.fillRect(left, top, width * percent / 100, height);
   		ctx.restore();
-  		(percent === 100) && (layer.destroy = true);
   	});
-  	let progressBar = new Anicanvas.Sprite('progbar', {left: 1*rem, top: height-40, width: 13*rem, height: 20}, progbarPaniter);
-  	layer.addSprite(progressBar);
-  	this.AC.$stages['background'].addLayer(layer);
+    let progresUpdate = {
+      'update': {
+        execute: (sprite, time)=>{
+          let mediaload = this.AC.$media.getImageProgress();
+          let percent = mediaload[2];
+          sprite.$data.percent = percent;
+          sprite.updated = true;
+          (percent === 100) && (layer.destroy = true);
+        }
+      }
+    }
+  	let progressBar = new Anicanvas.Sprite('progbar', {left: 1*rem, top: height-40, width: 13*rem, height: 20}, progbarPaniter, progresUpdate);
+  	layer.append(progressBar);
+  	this.AC.$stages['background'].append(layer);
   }
 
   drawPage = () => {
     let rem = this.rem,
     		canvasSize = this.fullPageSize,
-    		{ $media: {images, audios}, createLayer, addLayer } = this.AC,
+    		{ $media: {images, audios}, createLayer, append } = this.AC,
     		pageLayer = createLayer('page', 'fullpage', new Anicanvas.ImagePainter(images['bg1']));
     
     /*音乐播放按钮*/
@@ -97,9 +107,6 @@ class Invitation{
 	    	width: 1.2 * rem,
 	    	height: 1.2 * rem,
 	    	rotateVelocity: -45,
-	    	media: {
-	    		'music': audios['m1']
-	    	}
 	    },
     	musicIcoPainter, {
       	'rotate': {
@@ -108,16 +115,17 @@ class Invitation{
         	}
       	}
     });
+    musicIco.$media.music = audios['m1'];
     musicIco.setPath(function(context){
       context.arc(this.left+this.width/2, this.top+this.height/2, 0, 2*Math.PI);
     });
-    musicIco.media.play('music');
+    musicIco.$media.play('music');
     
     
       
     /*对话框*/
     let dailogPainter = new Anicanvas.Painter((sprite,context,time,fdelta,data) => {
-      if(sprite.data.photo){
+      if(sprite.$data.photo){
         dailogPainter.putPhoto(sprite, context);
       }
       else{
@@ -129,7 +137,7 @@ class Invitation{
         context.drawImage(dailog, 0, 0, dailog.width, 398, sprite.left, sprite.top, sprite.width, sprite.height);
         if(time > 2500){  
         	context.drawImage(dailog, 0, 400, dailog.width, 129, sprite.left, sprite.top+sprite.height*0.2513, sprite.width, sprite.height*0.3241);
-          //dailogPainter.getPhoto(sprite, context);
+          dailogPainter.getPhoto(sprite, context);
         }
         context.restore();
       }
@@ -152,7 +160,7 @@ class Invitation{
       	})
     	}
     );
-
+    
       
     /*箭头动画*/
     let arrowSlide = new Anicanvas.Behavior({
@@ -173,7 +181,7 @@ class Invitation{
     /*背景*/
     let midBgPanter = {
       paint:(sprite,context,time,data)=>{
-        let midbg = sprite.data.img;
+        let midbg = sprite.$data.img;
         if(midbg) {
         	context.save();
 	        if(sprite.opacity < 1){
@@ -189,66 +197,67 @@ class Invitation{
       'slideUp':{
       	distance: -20, duration:800, delay:2500,
         execute : function(sprite, time){
-          sprite.img = images['p1_02_01'];
-          if(time>this.delay){
-            
-            let deltat = time-this.delay;
-            sprite.velocityY = this.distance/this.duration;
+          sprite.$data.img = images['p1_02_01'];
+          let deltat = time - sprite._startTime - this.delay;
+          if(deltat > 0){
+            sprite.velocityY = this.distance / this.duration;
             let opacity = deltat / this.duration;
-            if(deltat>=800){
+            if(deltat >= 800){
               sprite.velocityY = 0;
               opacity = 1;
               delete sprite.behaviors.slideUp;
             }
-            sprite.opacity = opacity>1?1:opacity;
+            sprite.opacity = opacity > 1 ? 1 : opacity;
           }
         }
       },
       'bgswitch':{
-      	delay:3500,
+      	delay: 3500,
         execute : function(sprite, time){
-          if(time>this.delay){
-            let deltat = time - this.delay,
-                skipt = deltat % 1000;
-            if(skipt<500){
-              sprite.data.img = images['p1_02_01'];
+          let deltat = time - sprite._startTime - this.delay;
+          if(deltat > 0){
+            let skipt = deltat % 1000;
+            if(skipt < 500){
+              sprite.$data.img = images['p1_02_01'];
             }
             else{
-              sprite.data.img = images['p1_02_02'];
+              sprite.$data.img = images['p1_02_02'];
             }
           }
         }
       }
     };
 
-    let midBgLayer = new Anicanvas.Layer('midbg', {top:6.27*rem, left:0.52*rem, width:13.52*rem, opacity:0, height:12.7*rem, data: {img:null}}, midBgPanter, midBgBehaviors);
+    let midBgLayer = new Anicanvas.Layer('midbg', {top: 6.96*rem+20, left:0.52*rem, width:13.52*rem, opacity:0, height:12.7*rem, data: {img:null}}, midBgPanter, midBgBehaviors);
     /*人物*/
     let peopleCell = [{x:0,y:0,w:268,h:384},{x:270,y:0,w:268,h:384},{x:540,y:0,w:268,h:384},{x:810,y:0,w:268,h:384}],
         peoplePainter = new Anicanvas.SheetPainter(images['p1_03_01'], peopleCell, {interval:500, autoruning:true, iteration:'infinite'})
-    let people = new Anicanvas.Sprite('people', {left:2.2*rem,width:10.72*rem,opacity:0,height:15.36*rem}, peoplePainter);
+    let people = new Anicanvas.Sprite('people', {left:2.2*rem,top:6.27*rem, width:10.72*rem,opacity:0,height:15.36*rem}, peoplePainter);
 
     /*固定图片*/
     let customPainter = {
       paint:function(sprite,context,time,data){
-        let img = sprite.data.img;
+        let img = sprite.$data.img;
         img && context.drawImage(img, 0, 0, img.width, img.height, sprite.left, sprite.top, sprite.width, sprite.height);
       }
     };
-    let floor = new Anicanvas.Sprite('floor', {top:19.31*rem, left:2.745*rem, width:10.56*rem, height:2.88*rem, data:{ img: images['p1_03_03']}}, customPainter);
-    let desc = new Anicanvas.Sprite('desc', {top:7*rem, left:3.84*rem, width:7.02*rem, height:5.12*rem, data:{img: images['p1_03_02']}}, customPainter);
+    let floor = new Anicanvas.Sprite('floor', {top:19.31*rem, left:2.745*rem, width:10.56*rem, height:2.88*rem, $data:{ img: images['p1_03_03']}}, customPainter);
+    let desc = new Anicanvas.Sprite('desc', {top:14.275*rem, left:3.84*rem, width:7.02*rem, height:5.12*rem, $data:{img: images['p1_03_02']}}, customPainter);
 
 
-    midBgLayer.addSprite(people);
-    midBgLayer.addSprite(desc);
-    this.AC.addSprite(musicIco, arrow);
-    addLayer(midBgLayer);
 
-    pageLayer.addSprite(dailog);
-    pageLayer.addSprite(floor);
-    this.AC.$stages['background'].addLayer(pageLayer);
+    this.AC.append(musicIco, midBgLayer, arrow, people, desc);
+
+    pageLayer.append(dailog);
+    pageLayer.append(floor);
+    this.AC.$stages['background'].append(pageLayer);
       
   }
-    
+  test(){
+    let {rem} = this;
+
+    /*测试代码*/
+  }
   
 }
 

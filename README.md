@@ -6,7 +6,7 @@ npm: npm install anicanvas
 
 本地：将dist目录下的anicanvas.min.js放到使用目录
 
-sdn: https://cdn.jsdelivr.net/npm/anicanvas@0.0.2/dist/anicanvas.js
+sdn: https://cdn.jsdelivr.net/npm/anicanvas@0.0.3/dist/anicanvas.min.js
 
 # 使用说明
 简单的实例
@@ -14,7 +14,7 @@ sdn: https://cdn.jsdelivr.net/npm/anicanvas@0.0.2/dist/anicanvas.js
 import Anicanvas from 'anicanvas'
 const app = new Anicanvas('#app', {width: 200, height: 100}); //创建实例
 const ballPainter = new Anicanvas.Painter((sprite, context, time, fdelta) => {
-  let {left, top, width, height, rotatePoint: {x, y}} = sprite; //rotatePoint为精灵中心左边，免去计算
+  let {left, top, width, height, rotatePoint: {x, y}} = sprite; //rotatePoint为精灵中心坐标，免去计算
   context.save();
   context.beginPath();
   context.fillStyle = "red";
@@ -39,7 +39,7 @@ const ballBehaviors = {
   })
 };
 const ball = new Anicanvas.Sprite('ball', {width: 20, height: 20}, ballPainter, ballBehaviors);
-app.addSprite(ball);
+app.append(ball);
 app.start();
 ```
 

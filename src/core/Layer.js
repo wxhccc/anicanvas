@@ -5,40 +5,30 @@ import {isType, objKeySort} from '../utils';
 * 
 */
 export default class Layer extends Sprite {
+  TYPE = 'layer';
   constructor(name='', args={}, painter=null, behaviors={}){
     super(name, args, painter, behaviors);
-    this.layers = [];
-    this.sprites = [];
+    this.children = [];
   }
   paint(context, time, fdelta, data) {
     super.paint(context, time, fdelta, data);
-    let paintFn = i => i.paint &&　i.paint(context, time, fdelta);
-    this.sprites.forEach(paintFn);
-    this.layers.forEach(paintFn);
+    this.children.forEach(i => (i.paint &&　i.paint(context, time, fdelta)));
   }
   update(time, fdelta, data, context) {
     super.update(time, fdelta, data, context);
-    let updateFn = (i, index, arr) => {
+    this.children.forEach((i, index, arr) => {
       i.destroy && arr.splice(index, 1);
       i.update &&　i.update(time, fdelta, data, context);
-    }
-    this.sprites.forEach(updateFn);
-    this.layers.forEach(updateFn);
+    });
   }
-  /*添加精灵*/
-  addLayer(...layer){
-    let { layers } = this;
-    layers.push(...layer);
-    layer.forEach(item => (item.$parent = this))
-    objKeySort(layers, 'zindex');
+  /* 添加子元素，精灵或层 */
+  append(...child){
+    let { children } = this;
+    children.push(...child);
+    child.forEach(item => (item.$parent = this))
+    objKeySort(children, 'zindex');
   }
-  /*添加精灵*/
-  addSprite(...sprite){
-    let { sprites } = this;
-    sprites.push(...sprite);
-    sprite.forEach(item => (item.$parent = this))
-    objKeySort(sprites, 'zindex');
-  }
+
 }
 
 export class BaseLayer extends Layer {

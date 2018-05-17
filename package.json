@@ -1,9 +1,7 @@
 {
   "requires": true,
   "lockfileVersion": 1,
-  "dependencies": {
-    "lodash": "^4.17.10"
-  },
+  "dependencies": {},
   "name": "anicanvas",
   "description": "a canvas library for animation scene in html",
   "version": "0.0.3",
@@ -15,6 +13,7 @@
     "babel-preset-stage-0": "^6.24.1",
     "koa": "^2.5.1",
     "koa-static": "^4.0.2",
+    "lodash": "^4.17.10",
     "nodemon": "^1.17.4",
     "rollup": "^0.58.2",
     "rollup-plugin-babel": "^3.0.4",
@@ -26,7 +25,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "rollup -w -c scripts/dev.config.js",
-    "build": "rollup -c scripts/prod.config.js",
+    "build": "rollup -c scripts/prod.config.js && rollup -c scripts/base.config.js -f umd -o dist/anicanvas.min.js",
     "demo-dev": "rollup -w -c scripts/demo-dev.config.js",
     "demo-server": "nodemon scripts/demo-dev-server.js",
     "demo-es5": "rollup -w -c scripts/demo.config.js",

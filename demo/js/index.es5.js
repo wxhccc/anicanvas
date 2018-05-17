@@ -46,7 +46,8 @@
 
   $(function () {
 
-    var app = new Invitation('#J-wrap');
+    var t = void 0,
+        app = new Invitation('#J-wrap');
     $(window).resize(function () {
       clearTimeout(t);
       t = setTimeout(function () {
@@ -75,7 +76,7 @@
             images = _AC$$media.images,
             audios = _AC$$media.audios,
             createLayer = _AC.createLayer,
-            addLayer = _AC.addLayer,
+            append = _AC.append,
             pageLayer = createLayer('page', 'fullpage', new Anicanvas.ImagePainter(images['bg1']));
 
         /*音乐播放按钮*/
@@ -86,10 +87,7 @@
           left: 0.865 * 15 * rem,
           width: 1.2 * rem,
           height: 1.2 * rem,
-          rotateVelocity: -45,
-          media: {
-            'music': audios['m1']
-          }
+          rotateVelocity: -45
         }, musicIcoPainter, {
           'rotate': {
             execute: function execute(sprite, time, fdelta, data, context) {
@@ -97,14 +95,15 @@
             }
           }
         });
+        musicIco.$media.music = audios['m1'];
         musicIco.setPath(function (context) {
           context.arc(this.left + this.width / 2, this.top + this.height / 2, 0, 2 * Math.PI);
         });
-        musicIco.media.play('music');
+        musicIco.$media.play('music');
 
         /*对话框*/
         var dailogPainter = new Anicanvas.Painter(function (sprite, context, time, fdelta, data) {
-          if (sprite.data.photo) {
+          if (sprite.$data.photo) {
             dailogPainter.putPhoto(sprite, context);
           } else {
             var _dailog = images['p1_01'];
@@ -115,7 +114,7 @@
             context.drawImage(_dailog, 0, 0, _dailog.width, 398, sprite.left, sprite.top, sprite.width, sprite.height);
             if (time > 2500) {
               context.drawImage(_dailog, 0, 400, _dailog.width, 129, sprite.left, sprite.top + sprite.height * 0.2513, sprite.width, sprite.height * 0.3241);
-              //dailogPainter.getPhoto(sprite, context);
+              dailogPainter.getPhoto(sprite, context);
             }
             context.restore();
           }
@@ -154,7 +153,7 @@
         /*背景*/
         var midBgPanter = {
           paint: function paint(sprite, context, time, data) {
-            var midbg = sprite.data.img;
+            var midbg = sprite.$data.img;
             if (midbg) {
               context.save();
               if (sprite.opacity < 1) {
@@ -170,10 +169,9 @@
           'slideUp': {
             distance: -20, duration: 800, delay: 2500,
             execute: function execute(sprite, time) {
-              sprite.img = images['p1_02_01'];
-              if (time > this.delay) {
-
-                var deltat = time - this.delay;
+              sprite.$data.img = images['p1_02_01'];
+              var deltat = time - sprite._startTime - this.delay;
+              if (deltat > 0) {
                 sprite.velocityY = this.distance / this.duration;
                 var opacity = deltat / this.duration;
                 if (deltat >= 800) {
@@ -188,43 +186,40 @@
           'bgswitch': {
             delay: 3500,
             execute: function execute(sprite, time) {
-              if (time > this.delay) {
-                var deltat = time - this.delay,
-                    skipt = deltat % 1000;
+              var deltat = time - sprite._startTime - this.delay;
+              if (deltat > 0) {
+                var skipt = deltat % 1000;
                 if (skipt < 500) {
-                  sprite.data.img = images['p1_02_01'];
+                  sprite.$data.img = images['p1_02_01'];
                 } else {
-                  sprite.data.img = images['p1_02_02'];
+                  sprite.$data.img = images['p1_02_02'];
                 }
               }
             }
           }
         };
 
-        var midBgLayer = new Anicanvas.Layer('midbg', { top: 6.27 * rem, left: 0.52 * rem, width: 13.52 * rem, opacity: 0, height: 12.7 * rem, data: { img: null } }, midBgPanter, midBgBehaviors);
+        var midBgLayer = new Anicanvas.Layer('midbg', { top: 6.96 * rem + 20, left: 0.52 * rem, width: 13.52 * rem, opacity: 0, height: 12.7 * rem, data: { img: null } }, midBgPanter, midBgBehaviors);
         /*人物*/
         var peopleCell = [{ x: 0, y: 0, w: 268, h: 384 }, { x: 270, y: 0, w: 268, h: 384 }, { x: 540, y: 0, w: 268, h: 384 }, { x: 810, y: 0, w: 268, h: 384 }],
             peoplePainter = new Anicanvas.SheetPainter(images['p1_03_01'], peopleCell, { interval: 500, autoruning: true, iteration: 'infinite' });
-        var people = new Anicanvas.Sprite('people', { left: 2.2 * rem, width: 10.72 * rem, opacity: 0, height: 15.36 * rem }, peoplePainter);
+        var people = new Anicanvas.Sprite('people', { left: 2.2 * rem, top: 6.27 * rem, width: 10.72 * rem, opacity: 0, height: 15.36 * rem }, peoplePainter);
 
         /*固定图片*/
         var customPainter = {
           paint: function paint(sprite, context, time, data) {
-            var img = sprite.data.img;
+            var img = sprite.$data.img;
             img && context.drawImage(img, 0, 0, img.width, img.height, sprite.left, sprite.top, sprite.width, sprite.height);
           }
         };
-        var floor = new Anicanvas.Sprite('floor', { top: 19.31 * rem, left: 2.745 * rem, width: 10.56 * rem, height: 2.88 * rem, data: { img: images['p1_03_03'] } }, customPainter);
-        var desc = new Anicanvas.Sprite('desc', { top: 7 * rem, left: 3.84 * rem, width: 7.02 * rem, height: 5.12 * rem, data: { img: images['p1_03_02'] } }, customPainter);
+        var floor = new Anicanvas.Sprite('floor', { top: 19.31 * rem, left: 2.745 * rem, width: 10.56 * rem, height: 2.88 * rem, $data: { img: images['p1_03_03'] } }, customPainter);
+        var desc = new Anicanvas.Sprite('desc', { top: 14.275 * rem, left: 3.84 * rem, width: 7.02 * rem, height: 5.12 * rem, $data: { img: images['p1_03_02'] } }, customPainter);
 
-        midBgLayer.addSprite(people);
-        midBgLayer.addSprite(desc);
-        _this.AC.addSprite(musicIco, arrow);
-        addLayer(midBgLayer);
+        _this.AC.append(musicIco, midBgLayer, arrow, people, desc);
 
-        pageLayer.addSprite(dailog);
-        pageLayer.addSprite(floor);
-        _this.AC.$stages['background'].addLayer(pageLayer);
+        pageLayer.append(dailog);
+        pageLayer.append(floor);
+        _this.AC.$stages['background'].append(pageLayer);
       };
 
       this.envInit();
@@ -256,6 +251,7 @@
         //this.AC.$stage.pause();
         //this.AC.$stages['background'].pause();
         this.loadingMedia();
+        //this.test();
       }
       /*预加载资源*/
 
@@ -296,21 +292,37 @@
           var left = sprite.left,
               top = sprite.top,
               width = sprite.width,
-              height = sprite.height;
+              height = sprite.height,
+              percent = sprite.$data.percent;
 
-          var mediaload = _this2.AC.$media.getImageProgress();
-          var percent = mediaload[2];
           ctx.save();
           ctx.fillStyle = '#aeaeae';
           ctx.fillRect(left, top, width, height);
           ctx.fillStyle = '#999999';
           ctx.fillRect(left, top, width * percent / 100, height);
           ctx.restore();
-          percent === 100 && (layer.destroy = true);
         });
-        var progressBar = new Anicanvas.Sprite('progbar', { left: 1 * rem, top: height - 40, width: 13 * rem, height: 20 }, progbarPaniter);
-        layer.addSprite(progressBar);
-        this.AC.$stages['background'].addLayer(layer);
+        var progresUpdate = {
+          'update': {
+            execute: function execute(sprite, time) {
+              var mediaload = _this2.AC.$media.getImageProgress();
+              var percent = mediaload[2];
+              sprite.$data.percent = percent;
+              sprite.updated = true;
+              percent === 100 && (layer.destroy = true);
+            }
+          }
+        };
+        var progressBar = new Anicanvas.Sprite('progbar', { left: 1 * rem, top: height - 40, width: 13 * rem, height: 20 }, progbarPaniter, progresUpdate);
+        layer.append(progressBar);
+        this.AC.$stages['background'].append(layer);
+      }
+    }, {
+      key: 'test',
+      value: function test() {
+        var rem = this.rem;
+
+        /*测试代码*/
       }
     }]);
     return Invitation;

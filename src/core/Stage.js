@@ -50,11 +50,8 @@ export default class Stage {
     }
   }
   
-  addLayer = (...layer) => {
-    this._stage.addLayer(...layer);
-  }
-  addSprite = (...sprite) => {
-    this._stage.addSprite(...sprite);
+  append = (...child) => {
+    this._stage.append(...child);
   }
   resize() {
     this.setCanvasSize();

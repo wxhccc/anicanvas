@@ -1,3 +1,4 @@
+import Media from './Media';
 import {isType, jsonEqual} from '../utils';
 /*
 * 精灵类，用于处理各种精灵对象的绘制和行为
@@ -20,25 +21,25 @@ const relevantProps = {
   rotatePoint: {x: 0, y: 0}
 };
 export default class Sprite {
+  _startTime = 0;
+  _autoRP = true;
+  _updated = false;
+  $data = {};
+  $media = new Media;
+  TYPE = 'sprite';
   constructor(name='',args={}, painter=null, behaviors={}){
     this.name = name;
-    this.painter = painter;
+    this._painter = painter;
     this.behaviors = isType(behaviors, 'object') ? behaviors : {};
     this.injectRelevantProps();
-    this.data = {};
-    this.media = {};
-    this._startTime = 0;
     this.initArgs(args);
-    this.updated = false;
-    this.rotatePoint = {x: this.left+this.width/2, y:this.top+this.height/2};
   }
   initArgs(args) {
-    Object.assign(this, relevantProps, args);
-    Object.assign(this.media, this.initMedia());
+    Object.assign(this, args);
   }
   injectRelevantProps(){
     Object.keys(relevantProps).forEach(name => {
-      let oldValue;
+      let oldValue = relevantProps[name];
       let _this = this;
       Object.defineProperty(this, name, {
         enumerable: true,
@@ -47,35 +48,42 @@ export default class Sprite {
           return oldValue;
         },
         set: function(newValue) {
+          _this._checkAutoRp(name, newValue);
           if(newValue === oldValue || jsonEqual(newValue, oldValue)){
             return;
           }
           oldValue = newValue;
+          _this._autoRotatePoint(name);
           _this.updated = true;
         }
       })
     })
   }
-  initMedia() {
-    return {
-      play: function(name) {
-        this[name].play && this[name].play();
-      },
-      pause: function(name) {
-        this[name].pause && this[name].pause();
-      }
+  _checkAutoRp(name, newValue) {
+    if(name === 'rotatePoint' && isType(newValue, 'object')) {
+      !newValue.auto ? (this._autoRP = false) : delete newValue['auto'];
     }
+  }
+  _autoRotatePoint(name){
+    if(!this._autoRP)
+      return;
+    if(['left', 'top', 'width', 'height'].indexOf(name) >=0){
+      this.rotatePoint = this._spriteRP();
+    }
+  }
+  _spriteRP(){
+    return {x: this.left + this.width / 2, y: this.top + this.height / 2, auto: true};
   }
   /*设置精灵路径*/
   setPath(fn){
     isType(fn, 'function') && (this.path = fn);
   }
   paint(context, time, fdelta, data) {
-    if(this.painter && this.painter.paint && this.visible){
+    if(this._painter && this._painter.paint && this.visible){
       let {left, top} = this.$parent || {left: 0, top: 0};
       context.save();
       context.translate(left, top);
-      this.painter.paint(this, context, time, fdelta, data);
+      this._painter.paint(this, context, time, fdelta, data);
       context.restore();
     }
   }
