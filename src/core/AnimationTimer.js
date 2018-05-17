@@ -12,8 +12,17 @@ export default class AnimationTimer {
     this._playing = false;
     this.time = 0;
     this.elapsed = 0;
+    this.frameRate = 0;
+    this._lastFRupdate = 0;
     this._animHandle = null;
   }
+  updateFrameRate(elapsed, time){
+    if(elapsed - this._lastFRupdate > 1000) {
+      this._lastFRupdate = elapsed;
+      this.frameRate = Math.round(1000 / time);
+    }
+  }
+
   start() {
     if(!this.running) {
       this.startTime = +new Date();
@@ -21,15 +30,12 @@ export default class AnimationTimer {
       this.play();
       let animation = (time) => {
         if(this._playing){
-          if(!this.lastTime){
-            this.lastTime = time;
-          }
-          else{
-            this.time = time - this.lastTime;
-            this.elapsed += this.time;
-            this.lastTime = time;
-            this._animation(this.elapsed, this.time);
-          }
+          !this.lastTime && (this.lastTime = time);
+          this.time = time - this.lastTime;
+          this.elapsed += this.time;
+          this.lastTime = time;
+          this.updateFrameRate(this.elapsed, this.time);
+          this._animation(this.elapsed, this.time);
         }
         this._animHandle = window.requestAnimationFrame(animation);
       }
@@ -41,11 +47,13 @@ export default class AnimationTimer {
   }
   pause() {
     this.lastTime = 0;
+    this.frameRate = 0;
     this._playing = false;
   }
   stop() {
     this.elapsed = (+new Date()) - this.startTime;
     this.running = false;
+    this.frameRate = 0;
     window.cancelAnimationFrame(this._animHandle);
   }
   getElapsedTime(){

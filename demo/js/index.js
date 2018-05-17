@@ -257,6 +257,46 @@ class Invitation{
     let {rem} = this;
 
     /*测试代码*/
+    let ballRoll = {
+      execute: (sprite, time)=>{
+        let {left, top, width, height} = sprite;
+        let {left: pleft, top: ptop, width: pwidth, height: pheight} = sprite.$parent;
+        if(left < pleft || left > pleft + pwidth - width) {
+          sprite.left = left < pleft? pleft : pleft + pwidth - width;
+          sprite.velocityX = -sprite.velocityX;
+        }
+        else if( top < ptop || top > ptop + pheight -height) {
+          sprite.top = top < ptop ? ptop : ptop + pheight -height;
+          sprite.velocityY = -sprite.velocityY;
+        }
+        sprite.left += sprite.velocityX;
+        sprite.top += sprite.velocityY;
+        sprite.rotatePoint = {x: sprite.left + sprite.width/2, y: sprite.top + sprite.height / 2};
+      }
+    };
+    let {width: swidth, height: sheight} = this.AC.$stage._stage;
+    for(let i = 0; i< 1; i++){
+      let width = 10 + Math.random() * 30;
+      let left = Math.random() * swidth - width;
+      let top = Math.random() * swidth - width;
+      let velocityX = Math.random() * 20;
+      let velocityY = Math.random() * 20;
+      let opacity = 0.2 + Math.random() * 0.8;
+      let ballPainter = new Anicanvas.Painter((sprite, context, time, fdelta)=>{
+        console.log(this.AC.frameRate);
+        let { rotatePoint: {x, y}} = sprite; //
+        context.save();
+        context.beginPath();
+        context.globalAlpha = sprite.opacity;
+        context.fillStyle = "red";
+        context.arc(x, y, width / 2, 0, Math.PI*2);
+        context.fill();
+        context.restore();
+      })
+      let ball = new Anicanvas.Sprite('ball'+i, {left, top, width, height: width, opacity, velocityX, velocityY}, ballPainter, {ballRoll})
+      this.AC.append(ball);
+    }
+
   }
   
 }

@@ -55,6 +55,9 @@ export default class Anicanvas {
   stop() {
     this._aniTimer.stop();
   }
+  get frameRate(){
+    return this._aniTimer.frameRate;
+  }
   setCanvasSize() {
     let {width, height} = this._options;
     if(isNumeric(width) && isNumeric(height)) {

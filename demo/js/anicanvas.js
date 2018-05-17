@@ -221,6 +221,7 @@
       key: 'initArgs',
       value: function initArgs(args) {
         Object.assign(this, args);
+        !this.needAutoRP && (this.rotatePoint = this._spriteRP());
       }
     }, {
       key: 'injectRelevantProps',
@@ -237,12 +238,12 @@
               return oldValue;
             },
             set: function set$$1(newValue) {
-              _this._checkAutoRp(name, newValue);
+              _this.needAutoRP && _this._checkAutoRp(name, newValue);
               if (newValue === oldValue || jsonEqual(newValue, oldValue)) {
                 return;
               }
               oldValue = newValue;
-              _this._autoRotatePoint(name);
+              _this.needAutoRP && _this._autoRotatePoint(name);
               _this.updated = true;
             }
           });
@@ -258,15 +259,18 @@
     }, {
       key: '_autoRotatePoint',
       value: function _autoRotatePoint(name) {
+        if (!this.needAutoRP) return;
         if (!this._autoRP) return;
         if (['left', 'top', 'width', 'height'].indexOf(name) >= 0) {
-          this.rotatePoint = this._spriteRP();
+          this.rotatePoint = this._spriteRP(true);
         }
       }
     }, {
       key: '_spriteRP',
-      value: function _spriteRP() {
-        return { x: this.left + this.width / 2, y: this.top + this.height / 2, auto: true };
+      value: function _spriteRP(auto) {
+        var point = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
+        auto && (point.auto = true);
+        return point;
       }
       /*设置精灵路径*/
 
@@ -292,10 +296,10 @@
     }, {
       key: 'update',
       value: function update(time, fdelta, data, context) {
+        this.updated = false;
         !this._startTime && (this._startTime = time);
         this._runBehaviors(time, fdelta, data, context);
         this.updated && (context.isStatic = false);
-        this.updated = false;
       }
     }, {
       key: '_runBehaviors',
@@ -562,6 +566,7 @@
       key: 'initArgs',
       value: function initArgs(args) {
         Object.assign(this, args);
+        !this.needAutoRP && (this.rotatePoint = this._spriteRP());
       }
     }, {
       key: 'injectRelevantProps',
@@ -578,12 +583,12 @@
               return oldValue;
             },
             set: function set$$1(newValue) {
-              _this._checkAutoRp(name, newValue);
+              _this.needAutoRP && _this._checkAutoRp(name, newValue);
               if (newValue === oldValue || jsonEqual(newValue, oldValue)) {
                 return;
               }
               oldValue = newValue;
-              _this._autoRotatePoint(name);
+              _this.needAutoRP && _this._autoRotatePoint(name);
               _this.updated = true;
             }
           });
@@ -599,15 +604,18 @@
     }, {
       key: '_autoRotatePoint',
       value: function _autoRotatePoint(name) {
+        if (!this.needAutoRP) return;
         if (!this._autoRP) return;
         if (['left', 'top', 'width', 'height'].indexOf(name) >= 0) {
-          this.rotatePoint = this._spriteRP();
+          this.rotatePoint = this._spriteRP(true);
         }
       }
     }, {
       key: '_spriteRP',
-      value: function _spriteRP() {
-        return { x: this.left + this.width / 2, y: this.top + this.height / 2, auto: true };
+      value: function _spriteRP(auto) {
+        var point = { x: this.left + this.width / 2, y: this.top + this.height / 2 };
+        auto && (point.auto = true);
+        return point;
       }
       /*设置精灵路径*/
 
@@ -633,10 +641,10 @@
     }, {
       key: 'update',
       value: function update(time, fdelta, data, context) {
+        this.updated = false;
         !this._startTime && (this._startTime = time);
         this._runBehaviors(time, fdelta, data, context);
         this.updated && (context.isStatic = false);
-        this.updated = false;
       }
     }, {
       key: '_runBehaviors',
@@ -897,10 +905,20 @@
       this._playing = false;
       this.time = 0;
       this.elapsed = 0;
+      this.frameRate = 0;
+      this._lastFRupdate = 0;
       this._animHandle = null;
     }
 
     createClass(AnimationTimer, [{
+      key: 'updateFrameRate',
+      value: function updateFrameRate(elapsed, time) {
+        if (elapsed - this._lastFRupdate > 1000) {
+          this._lastFRupdate = elapsed;
+          this.frameRate = Math.round(1000 / time);
+        }
+      }
+    }, {
       key: 'start',
       value: function start() {
         var _this = this;
@@ -911,14 +929,12 @@
           this.play();
           var animation = function animation(time) {
             if (_this._playing) {
-              if (!_this.lastTime) {
-                _this.lastTime = time;
-              } else {
-                _this.time = time - _this.lastTime;
-                _this.elapsed += _this.time;
-                _this.lastTime = time;
-                _this._animation(_this.elapsed, _this.time);
-              }
+              !_this.lastTime && (_this.lastTime = time);
+              _this.time = time - _this.lastTime;
+              _this.elapsed += _this.time;
+              _this.lastTime = time;
+              _this.updateFrameRate(_this.elapsed, _this.time);
+              _this._animation(_this.elapsed, _this.time);
             }
             _this._animHandle = window.requestAnimationFrame(animation);
           };
@@ -934,6 +950,7 @@
       key: 'pause',
       value: function pause() {
         this.lastTime = 0;
+        this.frameRate = 0;
         this._playing = false;
       }
     }, {
@@ -941,6 +958,7 @@
       value: function stop() {
         this.elapsed = +new Date() - this.startTime;
         this.running = false;
+        this.frameRate = 0;
         window.cancelAnimationFrame(this._animHandle);
       }
     }, {
@@ -1544,6 +1562,11 @@
       key: 'resize',
       value: function resize(size) {
         isType(size, 'object') && Object.assign(this._elem, size);
+      }
+    }, {
+      key: 'frameRate',
+      get: function get$$1() {
+        return this._aniTimer.frameRate;
       }
     }]);
     return Anicanvas;

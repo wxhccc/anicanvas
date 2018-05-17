@@ -36,6 +36,7 @@ export default class Sprite {
   }
   initArgs(args) {
     Object.assign(this, args);
+    !this.needAutoRP && (this.rotatePoint = this._spriteRP())
   }
   injectRelevantProps(){
     Object.keys(relevantProps).forEach(name => {
@@ -48,12 +49,12 @@ export default class Sprite {
           return oldValue;
         },
         set: function(newValue) {
-          _this._checkAutoRp(name, newValue);
+          _this.needAutoRP && _this._checkAutoRp(name, newValue);
           if(newValue === oldValue || jsonEqual(newValue, oldValue)){
             return;
           }
           oldValue = newValue;
-          _this._autoRotatePoint(name);
+          _this.needAutoRP && _this._autoRotatePoint(name);
           _this.updated = true;
         }
       })
@@ -65,14 +66,18 @@ export default class Sprite {
     }
   }
   _autoRotatePoint(name){
+    if(!this.needAutoRP)
+      return;
     if(!this._autoRP)
       return;
     if(['left', 'top', 'width', 'height'].indexOf(name) >=0){
-      this.rotatePoint = this._spriteRP();
+      this.rotatePoint = this._spriteRP(true);
     }
   }
-  _spriteRP(){
-    return {x: this.left + this.width / 2, y: this.top + this.height / 2, auto: true};
+  _spriteRP(auto){
+    let point = {x: this.left + this.width / 2, y: this.top + this.height / 2};
+    auto && (point.auto = true);
+    return point;
   }
   /*设置精灵路径*/
   setPath(fn){
@@ -86,12 +91,13 @@ export default class Sprite {
       this._painter.paint(this, context, time, fdelta, data);
       context.restore();
     }
+    
   }
   update(time, fdelta, data, context) {
+    this.updated = false;
     !this._startTime && (this._startTime = time);
     this._runBehaviors(time, fdelta, data, context);
     this.updated && (context.isStatic = false);
-    this.updated = false;
   }
 
   _runBehaviors(time, fdelta, data, context) {

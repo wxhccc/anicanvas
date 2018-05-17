@@ -320,9 +320,68 @@
     }, {
       key: 'test',
       value: function test() {
+        var _this3 = this;
+
         var rem = this.rem;
 
         /*测试代码*/
+
+        var ballRoll = {
+          execute: function execute(sprite, time) {
+            var left = sprite.left,
+                top = sprite.top,
+                width = sprite.width,
+                height = sprite.height;
+            var _sprite$$parent = sprite.$parent,
+                pleft = _sprite$$parent.left,
+                ptop = _sprite$$parent.top,
+                pwidth = _sprite$$parent.width,
+                pheight = _sprite$$parent.height;
+
+            if (left < pleft || left > pleft + pwidth - width) {
+              sprite.left = left < pleft ? pleft : pleft + pwidth - width;
+              sprite.velocityX = -sprite.velocityX;
+            } else if (top < ptop || top > ptop + pheight - height) {
+              sprite.top = top < ptop ? ptop : ptop + pheight - height;
+              sprite.velocityY = -sprite.velocityY;
+            }
+            sprite.left += sprite.velocityX;
+            sprite.top += sprite.velocityY;
+            sprite.rotatePoint = { x: sprite.left + sprite.width / 2, y: sprite.top + sprite.height / 2 };
+          }
+        };
+        var _AC$$stage$_stage = this.AC.$stage._stage,
+            swidth = _AC$$stage$_stage.width,
+            sheight = _AC$$stage$_stage.height;
+
+        var _loop = function _loop(i) {
+          var width = 10 + Math.random() * 30;
+          var left = Math.random() * swidth - width;
+          var top = Math.random() * swidth - width;
+          var velocityX = Math.random() * 20;
+          var velocityY = Math.random() * 20;
+          var opacity = 0.2 + Math.random() * 0.8;
+          var ballPainter = new Anicanvas.Painter(function (sprite, context, time, fdelta) {
+            console.log(_this3.AC.frameRate);
+            var _sprite$rotatePoint = sprite.rotatePoint,
+                x = _sprite$rotatePoint.x,
+                y = _sprite$rotatePoint.y; //
+
+            context.save();
+            context.beginPath();
+            context.globalAlpha = sprite.opacity;
+            context.fillStyle = "red";
+            context.arc(x, y, width / 2, 0, Math.PI * 2);
+            context.fill();
+            context.restore();
+          });
+          var ball = new Anicanvas.Sprite('ball' + i, { left: left, top: top, width: width, height: width, opacity: opacity, velocityX: velocityX, velocityY: velocityY }, ballPainter, { ballRoll: ballRoll });
+          _this3.AC.append(ball);
+        };
+
+        for (var i = 0; i < 1; i++) {
+          _loop(i);
+        }
       }
     }]);
     return Invitation;
