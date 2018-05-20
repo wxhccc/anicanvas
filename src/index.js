@@ -27,7 +27,7 @@ export default class Anicanvas {
     if(this._elem){
       this.eventListening();
       let {width, height} = this._options;
-      this.createStage('MAIN', {width, height, zIndex: 1000});
+      this.createStage('MAIN', {width, height, zIndex: 1000}, {left: 0, top: 0});
       this.$stage = this.$stages.MAIN;
     }
     else {

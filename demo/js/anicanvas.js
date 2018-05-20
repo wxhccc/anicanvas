@@ -1842,7 +1842,7 @@
               width = _options.width,
               height = _options.height;
 
-          this.createStage('MAIN', { width: width, height: height, zIndex: 1000 });
+          this.createStage('MAIN', { width: width, height: height, zIndex: 1000 }, { left: 0, top: 0 });
           this.$stage = this.$stages.MAIN;
         } else {
           errWarn('no accessable root element!');

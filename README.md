@@ -6,7 +6,7 @@ npm: npm install anicanvas
 
 本地：将dist目录下的anicanvas.min.js放到使用目录
 
-CDN: https://cdn.jsdelivr.net/npm/anicanvas@0.0.3/dist/anicanvas.min.js
+CDN: https://cdn.jsdelivr.net/npm/anicanvas@0.0.4/dist/anicanvas.min.js
 
 # 使用说明
 
@@ -40,7 +40,7 @@ const ballBehaviors = [
     }
   })
 ];
-const ball = new Anicanvas.Sprite('ball', {width: 20, height: 20}, ballPainter, ballBehaviors);
+const ball = new Anicanvas.Sprite('ball', {needAutoRP: true, width: 20, height: 20}, ballPainter, ballBehaviors);
 app.append(ball);
 app.start();
 ```
