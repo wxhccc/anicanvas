@@ -65,7 +65,7 @@ class Invitation{
   		ctx.fillRect(left, top, width, height);
   		ctx.restore();
   	});
-  	let layer = this.AC.createLayer('progLayer', 'fullpage', bgPainter);
+  	let layer = new Anicanvas.Sprite('progLayer', this.AC.$elemSize, bgPainter);
 
   	let progbarPaniter = new Anicanvas.Painter( (sprite, ctx, time, fdelta, data) => {
   		let {left, top, width, height, $data: {percent}} = sprite;
@@ -77,17 +77,15 @@ class Invitation{
   		ctx.restore();
   	});
     let progresUpdate = {
-      'update': {
-        execute: (sprite, time)=>{
-          let mediaload = this.AC.$media.getImageProgress();
-          let percent = mediaload[2];
-          sprite.$data.percent = percent;
-          sprite.updated = true;
-          (percent === 100) && (layer.destroy = true);
-        }
+      execute: (sprite, time)=>{
+        let mediaload = this.AC.$media.getImageProgress();
+        let percent = mediaload[2];
+        sprite.$data.percent = percent;
+        sprite.needUpdate = true;
+        (percent === 100) && (layer.destroy = true);
       }
-    }
-  	let progressBar = new Anicanvas.Sprite('progbar', {left: 1*rem, top: height-40, width: 13*rem, height: 20}, progbarPaniter, progresUpdate);
+    };
+  	let progressBar = new Anicanvas.Sprite('progbar', {left: 1*rem, top: height-40, width: 13*rem, height: 20}, progbarPaniter, [progresUpdate]);
   	layer.append(progressBar);
   	this.AC.$stages['background'].append(layer);
   }
@@ -95,8 +93,8 @@ class Invitation{
   drawPage = () => {
     let rem = this.rem,
     		canvasSize = this.fullPageSize,
-    		{ $media: {images, audios}, createLayer, append } = this.AC,
-    		pageLayer = createLayer('page', 'fullpage', new Anicanvas.ImagePainter(images['bg1']));
+    		{ $media: {images, audios}, $elemSize, append } = this.AC,
+    		pageLayer = new Anicanvas.Sprite('page', $elemSize, new Anicanvas.ImagePainter(images['bg1']));
     
     /*音乐播放按钮*/
     let musicIcoPainter = new Anicanvas.ImagePainter(images['music']);
@@ -108,17 +106,23 @@ class Invitation{
 	    	height: 1.2 * rem,
 	    	rotateVelocity: -45,
 	    },
-    	musicIcoPainter, {
-      	'rotate': {
-        	execute : function(sprite, time, fdelta, data, context){
-          	sprite.rotate = (sprite.rotate + fdelta/1000 * sprite.rotateVelocity ) % 360;
-        	}
+    	musicIcoPainter, [{
+      	execute : function(sprite, time, fdelta, data, context){
+        	sprite.rotate = (sprite.rotate + fdelta/1000 * sprite.rotateVelocity ) % 360;
       	}
-    });
+    	}]
+    );
     musicIco.$media.music = audios['m1'];
     musicIco.setPath(function(context){
-      context.arc(this.left+this.width/2, this.top+this.height/2, 0, 2*Math.PI);
+      let {left, top, width, height} = this;
+      let {left: pleft, top: ptop} = this.$parent;
+      left += pleft;
+      top += ptop;
+      context.arc(left + width/2, top + height/2, width / 2, 0, 2*Math.PI);
     });
+    musicIco.on('click', function(event){
+      this.$media.music.paused ? this.$media.play('music'): this.$media.pause('music');
+    })
     musicIco.$media.play('music');
     
     
@@ -142,6 +146,14 @@ class Invitation{
         context.restore();
       }
     });
+    let dailogBehavior = new Anicanvas.Behavior({
+      name: 'slideFadeDown',
+      timing: 'ease',
+      duration: 800,
+      delay: 700, 
+      fillMode: 'forward', 
+      animation:{ top:'+=20', opacity: 1}
+    });
     let dailog = new Anicanvas.Sprite('dailog', {
     		top: -20, 
     		left: 2.64*rem, 
@@ -149,16 +161,7 @@ class Invitation{
     		width: 8.8*rem, 
     		height: 6.76*rem
     	},
-    	dailogPainter, {
-      	'slideFadeDown' : new Anicanvas.Behavior({
-      		name: 'slideFadeDown',
-      		timing: 'ease',
-      		duration: 800,
-      		delay: 700, 
-      		fillMode: 'forward', 
-      		animation:{ top:'+=20', opacity: 1}
-      	})
-    	}
+    	dailogPainter, [dailogBehavior]
     );
     
       
@@ -174,7 +177,7 @@ class Invitation{
     		100: {top: '-=10', opacity:0}
     	}
     });
-    let arrow = new Anicanvas.Sprite('arrow',{top:canvasSize.height-2*rem+8,left:6.92*rem,width:1.16*rem,opacity:0,height:1.16*rem},new Anicanvas.ImagePainter(images['arrow']),{'slideUpRepeat':arrowSlide})
+    let arrow = new Anicanvas.Sprite('arrow', {top:canvasSize.height-2*rem+8,left:6.92*rem,width:1.16*rem,opacity:0,height:1.16*rem}, new Anicanvas.ImagePainter(images['arrow']), [arrowSlide]);
     
 
       
@@ -193,8 +196,8 @@ class Invitation{
         }
       }
     };
-    let midBgBehaviors = {
-      'slideUp':{
+    let midBgBehaviors = [{
+        name: 'slideUp',
       	distance: -20, duration:800, delay:2500,
         execute : function(sprite, time){
           sprite.$data.img = images['p1_02_01'];
@@ -210,8 +213,8 @@ class Invitation{
             sprite.opacity = opacity > 1 ? 1 : opacity;
           }
         }
-      },
-      'bgswitch':{
+      }, {
+        name: 'bgswitch',
       	delay: 3500,
         execute : function(sprite, time){
           let deltat = time - sprite._startTime - this.delay;
@@ -226,9 +229,9 @@ class Invitation{
           }
         }
       }
-    };
+    ];
 
-    let midBgLayer = new Anicanvas.Layer('midbg', {top: 6.96*rem+20, left:0.52*rem, width:13.52*rem, opacity:0, height:12.7*rem, data: {img:null}}, midBgPanter, midBgBehaviors);
+    let midBgLayer = new Anicanvas.Sprite('midbg', {top: 6.96*rem+20, left:0.52*rem, width:13.52*rem, opacity:0, height:12.7*rem, data: {img:null}}, midBgPanter, midBgBehaviors);
     /*人物*/
     let peopleCell = [{x:0,y:0,w:268,h:384},{x:270,y:0,w:268,h:384},{x:540,y:0,w:268,h:384},{x:810,y:0,w:268,h:384}],
         peoplePainter = new Anicanvas.SheetPainter(images['p1_03_01'], peopleCell, {interval:500, autoruning:true, iteration:'infinite'})
@@ -247,15 +250,19 @@ class Invitation{
 
 
     this.AC.append(musicIco, midBgLayer, arrow, people, desc);
+    pageLayer.append(floor, dailog);
+    dailog.on('click', function(event){
+      console.log(this.name, event, 1);
+    });
 
-    pageLayer.append(dailog);
-    pageLayer.append(floor);
+    pageLayer.on('click', ['dailog'], function(event){
+      console.log(this.name, event, 2)
+    })
     this.AC.$stages['background'].append(pageLayer);
       
   }
   test(){
     let {rem} = this;
-
     /*测试代码*/
     let ballRoll = {
       execute: (sprite, time)=>{
@@ -276,14 +283,13 @@ class Invitation{
     };
     let {width: swidth, height: sheight} = this.AC.$stage._stage;
     for(let i = 0; i< 1; i++){
-      let width = 10 + Math.random() * 30;
+      let width = 30 + Math.random() * 30;
       let left = Math.random() * swidth - width;
       let top = Math.random() * swidth - width;
-      let velocityX = Math.random() * 20;
-      let velocityY = Math.random() * 20;
+      let velocityX = 0; //Math.random() * 20;
+      let velocityY = 0; //Math.random() * 20;
       let opacity = 0.2 + Math.random() * 0.8;
       let ballPainter = new Anicanvas.Painter((sprite, context, time, fdelta)=>{
-        console.log(this.AC.frameRate);
         let { rotatePoint: {x, y}} = sprite; //
         context.save();
         context.beginPath();
@@ -293,7 +299,16 @@ class Invitation{
         context.fill();
         context.restore();
       })
-      let ball = new Anicanvas.Sprite('ball'+i, {left, top, width, height: width, opacity, velocityX, velocityY}, ballPainter, {ballRoll})
+      let ball = new Anicanvas.Sprite('ball', {needAutoRP: true, left, top, width, height: width, opacity, velocityX, velocityY}, ballPainter, [ballRoll]);
+      ball.on('click', function(e){
+        if(!this.velocityX) {
+          this.velocityX = Math.random() * 2;
+          this.velocityY = Math.random() * 2;
+        }
+        else {
+          this.velocityX = this.velocityY = 0;
+        }
+      });
       this.AC.append(ball);
     }
 

@@ -38,9 +38,9 @@ export default class Painter {
     sprite.top = - sprite.height / 2;
   }
   getPhoto(sprite,context) {
-    sprite.data.photo = context.getImageData(sprite.left, sprite.top, sprite.width, sprite.height);
+    sprite.$data.photo = context.getImageData(sprite.left, sprite.top, sprite.width, sprite.height);
   }
   putPhoto(sprite,context) {
-    context.putImageData(sprite.data.photo, sprite.left, sprite.top);
+    context.putImageData(sprite.$data.photo, sprite.left, sprite.top);
   }
 }

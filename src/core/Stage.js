@@ -1,4 +1,4 @@
-import {BaseLayer} from './Layer';
+import BaseLayer from './BaseLayer';
 import {isType, isNumeric, createHtmlElement, objectFilter, errWarn} from '../utils';
 
 export default class Stage {
@@ -11,6 +11,7 @@ export default class Stage {
   }
   resetOptions(options, fresh){
     (fresh || !this._options) ? (this._options = Object.assign({}, options)) : Object.assign(this._options, options);
+    this.zIndex = this._options.zIndex || 0;
   }
   elemInit(name, options) {
     let attrs = objectFilter(options, ['width', 'height']);
@@ -31,8 +32,9 @@ export default class Stage {
     }
   }
   update = (elapsed, fdelta, data) => {
+    let context = this._ctx;
+    context.isStatic = true;
     if(this._playing) {
-      let context = this._ctx;
       this._stage.update(elapsed, fdelta, data, context);
       this._stage.paint(context, elapsed, fdelta, data);
     }

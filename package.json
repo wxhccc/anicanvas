@@ -36,7 +36,7 @@
     "url": "git+https://github.com/wxhccc/anicanvas.git"
   },
   "keywords": [
-    "anicanvas"
+    "anicanvas", "canvas", "animation"
   ],
   "author": "gavinhe",
   "license": "MIT",

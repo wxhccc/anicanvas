@@ -86,7 +86,8 @@ export default class Behavior {
     }
     else{
       isType(this.animateCallback, 'function') && this.animateCallback(sprite, context);
-      delete sprite.behaviors[this.name]; //行为执行完销毁自身W
+      let behaviorIndex = sprite.behaviors.findIndex(item => (item._bid === this._bid));
+      sprite.behaviors.splice(behaviorIndex, 1); //行为执行完销毁自身W
     }
     
   }
@@ -102,7 +103,6 @@ export default class Behavior {
       this._setAnimaData();
       (!this.animation['0'] && !this.animation['100']) && (this.animation = {0: null, 100: this.animation}); //处理单层数据
       let {animation, _animaRuntime} = this;
-      
       for(let i in animation){
         (i === 0 && animation[0]) && this._spriteAttrSet(sprite, animation[0], true);
         _animaRuntime['framesTime'].push(i); 
@@ -146,7 +146,6 @@ export default class Behavior {
   /*属性变换函数*/
   _attrChange(sprite, time, fdelta, data, context){
     let { velocity } = this._animaRuntime;
-
     for(let i in velocity){
       sprite[i] += velocity[i] * fdelta;
     }

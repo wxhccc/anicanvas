@@ -4,6 +4,68 @@
   (global.Anicanvas = factory());
 }(this, (function () { 'use strict';
 
+  /*
+  * 公共函数
+  */
+  /* 创建dom元素 */
+  function createHtmlElement(tag, attrs, styles) {
+    var elem = document.createElement(tag);
+    isType(attrs, 'object') && Object.assign(elem, attrs);
+    isType(styles, 'object') && Object.assign(elem.style, styles);
+    return elem;
+  }
+  /* 创建dom元素 */
+  function objectFilter(obj, keys, def) {
+    var result = {};
+    isType(obj, 'object') && isType(keys, 'array') && keys.forEach(function (item) {
+      obj.hasOwnProperty(item) ? result[item] = obj[item] : def && (result[item] = undefined);
+    });
+    return result;
+  }
+  /* 对象数组按某一键值排序 */
+  function isType(value, type) {
+    return typeof type === 'string' ? Object.prototype.toString.call(value).toLowerCase() === '[object ' + type.toLowerCase() + ']' : null;
+  }
+  /* 判断变量是否是数字或数字字符串 */
+  function isNumeric(obj) {
+    return (isType(obj, 'number') || isType(obj, 'string')) && !isNaN(obj - parseFloat(obj));
+  }
+  /* json数据对比 */
+  function jsonEqual(obj1, obj2) {
+    return JSON.stringify(obj1) === JSON.stringify(obj2);
+  }
+  function getUniqueTime() {
+    return Math.floor((+new Date() + Math.random()) * 1000);
+  }
+  /* 对象数组按某一键值排序 */
+  function objKeySort() {
+    var obj_arr = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+    var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    var desc = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+    return obj_arr.sort(function (a, b) {
+      if (a[key] !== undefined && b[key] !== undefined) {
+        if (a[key] < b[key]) {
+          return desc ? 1 : -1;
+        } else if (a[key] > b[key]) {
+          return desc ? -1 : 1;
+        } else {
+          return 0;
+        }
+      } else {
+        return 0;
+      }
+    });
+  }
+  /* 角度转化弧度 */
+  function deg2rad(deg) {
+    return Math.PI / 180 * deg;
+  }
+  /* 错误处理 */
+  function errWarn(error) {
+    console.log(error);
+  }
+
   var classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -92,6 +154,204 @@
     return call && (typeof call === "object" || typeof call === "function") ? call : self;
   };
 
+  var toConsumableArray = function (arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+      return arr2;
+    } else {
+      return Array.from(arr);
+    }
+  };
+
+  var _Event$eventMap;
+  /*
+  * 事件类
+  * 
+  */
+
+  var Event = function () {
+    function Event() {
+      classCallCheck(this, Event);
+
+      this._isBindEvent = false;
+    }
+
+    createClass(Event, [{
+      key: 'on',
+      value: function on(eventName, childNames, listener) {
+        // if three arguments provided but childNames is not array ,not handle it
+        if (!Array.isArray(childNames) && listener) {
+          return;
+        }
+        var eventMap = Event.eventMap;
+        if (isType(childNames, 'function')) {
+          listener = childNames;
+          childNames = null;
+        }
+        if (eventMap.hasOwnProperty(eventName) && isType(listener, 'function')) {
+          !eventMap[eventName][this._id] && (eventMap[eventName][this._id] = { self: [], children: {} });
+          var callbacks = eventMap[eventName][this._id];
+          !listener._cbid && (listener._cbid = 'e' + getUniqueTime());
+
+          if (!childNames) {
+            var cbself = callbacks.self;
+            !cbself.find(function (item) {
+              return item._cbid === listener._cbid;
+            }) && cbself.push(listener);
+          } else {
+            var cbchild = callbacks.children;
+            childNames.forEach(function (item) {
+              if (!cbchild[item]) {
+                cbchild[item] = [listener];
+              } else {
+                !cbchild[item].find(function (item) {
+                  return item._cbid === listener._cbid;
+                }) && cbchild[item].push(listener);
+              }
+            });
+          }
+        }
+      }
+    }, {
+      key: 'off',
+      value: function off(eventName, childNames, listener) {
+        if (!Array.isArray(childNames) && listener) {
+          return;
+        }
+        var eventMap = Event.eventMap;
+        if (isType(childNames, 'function')) {
+          listener = childNames;
+          childNames = null;
+        }
+        if (!eventMap.hasOwnProperty(eventName)) {
+          return;
+        }
+        // if only eventName provide, remove all callbacks on this sprite
+        if (childNames === undefined && listener === undefined) {
+          delete Event.eventMap[eventName][this._id];
+          return;
+        }
+        var callbacks = Event.eventMap[eventName][this._id];
+        if (!callbacks || !listener._cbid || childNames !== null || !Array.isArray(childNames)) {
+          return;
+        }
+        if (!childNames) {
+          var cbself = callbacks.self;
+          if (listener === undefined) {
+            cbself.self = [];
+          } else if (listener && listener._cbid) {
+            var cbindex = cbself.findIndex(function (item) {
+              return item._cbid === listener._cbid;
+            });
+            cbindex >= 0 && cbself.splice(cbindex, 1);
+          }
+        } else {
+          var cbchild = callbacks.children;
+          if (listener === undefined) {
+            childNames.forEach(function (item) {
+              return delete cbchild[item];
+            });
+          } else if (listener && listener._cbid) {
+            childNames.forEach(function (item) {
+              var cbarr = cbchild[item];
+              if (cbarr && cbarr.length > 0) {
+                var _cbindex = cbarr.findIndex(function (citem) {
+                  return citem._cbid === listener._cbid;
+                });
+                _cbindex >= 0 && cbarr.splice(_cbindex, 1);
+              }
+            });
+          }
+        }
+      }
+
+      // event capture, return the target sprite;
+
+    }], [{
+      key: 'eventCapture',
+      value: function eventCapture(stages, event) {
+        for (var i = stages.length - 1; i >= 0; i--) {
+          var _stages$i = stages[i],
+              _stage = _stages$i._stage,
+              context = _stages$i._ctx;
+
+          if (Event.searchTargetSprite(_stage, { event: event, context: context })) {
+            break;
+          }
+        }
+      }
+    }, {
+      key: 'searchTargetSprite',
+      value: function searchTargetSprite(sprite, data) {
+        var children = sprite.children,
+            _id = sprite._id,
+            event = data.event,
+            _data$event = data.event,
+            x = _data$event.offsetX,
+            y = _data$event.offsetY,
+            context = data.context,
+            childLen = children.length;
+
+        if (sprite.isPointInpath({ x: x, y: y }, context)) {
+          event.targetSprite = sprite;
+          if (childLen == 0) {
+            return true;
+          }
+          for (var i = childLen - 1; i >= 0; i--) {
+            if (Event.searchTargetSprite(children[i], data)) {
+              return true;
+            }
+          }
+        }
+      }
+    }, {
+      key: 'eventBubbling',
+      value: function eventBubbling(event, spriteEvents) {
+        var fnQueue = [],
+            targetSprite = event.targetSprite,
+            _ref = targetSprite || {},
+            _id = _ref._id,
+            name = _ref.name,
+            $parent = _ref.$parent;
+
+        if (spriteEvents[_id] && spriteEvents[_id].self.length) {
+          fnQueue.push.apply(fnQueue, toConsumableArray(Event.runtimeBinding(spriteEvents[_id].self, targetSprite, event)));
+        }
+        var parentSprite = $parent;
+        while (parentSprite) {
+          if (!parentSprite._isBindEvent || spriteEvents[parentSprite._id]) {
+            parentSprite = parentSprite.$parent;
+            continue;
+          }
+          var spriteEvent = spriteEvents[parentSprite._id];
+          spriteEvent.self.length && fnQueue.push.apply(fnQueue, toConsumableArray(Event.runtimeBinding(spriteEvent.self, parentSprite, event)));
+          var children = spriteEvent.children;
+          children && children[name] && fnQueue.push.apply(fnQueue, toConsumableArray(Event.runtimeBinding(children[name], parentSprite, event)));
+          parentSprite = parentSprite.$parent;
+        }
+        return fnQueue;
+      }
+    }, {
+      key: 'runtimeBinding',
+      value: function runtimeBinding(fns, sprite, event) {
+        return fns.map(function (item) {
+          return item.bind(sprite, event);
+        });
+      }
+    }]);
+    return Event;
+  }();
+
+  Event.eventMap = (_Event$eventMap = {
+    click: {},
+    mouseenter: {},
+    mouseover: {},
+    mousemove: {},
+    mousedown: {},
+    mouseup: {}
+  }, defineProperty(_Event$eventMap, 'click', {}), defineProperty(_Event$eventMap, 'dblclick', {}), defineProperty(_Event$eventMap, 'contextmenu', {}), defineProperty(_Event$eventMap, 'wheel', {}), defineProperty(_Event$eventMap, 'touchstart', {}), defineProperty(_Event$eventMap, 'touchmove', {}), defineProperty(_Event$eventMap, 'touchend', {}), _Event$eventMap);
+
   /*
   * 媒体文件类，用于处理媒体对象的行为
   * 
@@ -117,65 +377,6 @@
   }();
 
   /*
-  * 公共函数
-  */
-  /* 创建dom元素 */
-  function createHtmlElement(tag, attrs, styles) {
-    var elem = document.createElement(tag);
-    isType(attrs, 'object') && Object.assign(elem, attrs);
-    isType(styles, 'object') && Object.assign(elem.style, styles);
-    return elem;
-  }
-  /* 创建dom元素 */
-  function objectFilter(obj, keys, def) {
-    var result = {};
-    isType(obj, 'object') && isType(keys, 'array') && keys.forEach(function (item) {
-      obj.hasOwnProperty(item) ? result[item] = obj[item] : def && (result[item] = undefined);
-    });
-    return result;
-  }
-  /* 对象数组按某一键值排序 */
-  function isType(value, type) {
-    return typeof type === 'string' ? Object.prototype.toString.call(value).toLowerCase() === '[object ' + type.toLowerCase() + ']' : null;
-  }
-  /* 判断变量是否是数字或数字字符串 */
-  function isNumeric(obj) {
-    return (isType(obj, 'number') || isType(obj, 'string')) && !isNaN(obj - parseFloat(obj));
-  }
-  /* json数据对比 */
-  function jsonEqual(obj1, obj2) {
-    return JSON.stringify(obj1) === JSON.stringify(obj2);
-  }
-  /* 对象数组按某一键值排序 */
-  function objKeySort() {
-    var obj_arr = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-    var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-    var desc = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-    return obj_arr.sort(function (a, b) {
-      if (a[key] !== undefined && b[key] !== undefined) {
-        if (a[key] < b[key]) {
-          return desc ? 1 : -1;
-        } else if (a[key] > b[key]) {
-          return desc ? -1 : 1;
-        } else {
-          return 0;
-        }
-      } else {
-        return 0;
-      }
-    });
-  }
-  /* 角度转化弧度 */
-  function deg2rad(deg) {
-    return Math.PI / 180 * deg;
-  }
-  /* 错误处理 */
-  function errWarn(error) {
-    console.log(error);
-  }
-
-  /*
   * 精灵类，用于处理各种精灵对象的绘制和行为
   * 
   */
@@ -196,25 +397,64 @@
     rotatePoint: { x: 0, y: 0 }
   };
 
-  var Sprite = function () {
+  var Sprite = function (_Event) {
+    inherits(Sprite, _Event);
+
     function Sprite() {
       var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
       var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       classCallCheck(this, Sprite);
-      this._startTime = 0;
-      this._autoRP = true;
-      this._updated = false;
-      this.$data = {};
-      this.$media = new Media();
-      this.TYPE = 'sprite';
 
-      this.name = name;
-      this._painter = painter;
-      this.behaviors = isType(behaviors, 'object') ? behaviors : {};
-      this.injectRelevantProps();
-      this.initArgs(args);
+      var _this2 = possibleConstructorReturn(this, (Sprite.__proto__ || Object.getPrototypeOf(Sprite)).call(this));
+
+      _this2._startTime = 0;
+      _this2._autoRP = true;
+      _this2.needUpdate = false;
+      _this2.$data = {};
+      _this2.$media = new Media();
+      _this2.children = [];
+
+      _this2.isPointInpath = function () {
+        var positon = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        var context = arguments[1];
+
+        var result = false;
+        var x = positon.x,
+            y = positon.y;
+
+        if (isNumeric(x) && isNumeric(y)) {
+          if (_this2._path && context) {
+            _this2._path(context);
+            result = context.isPointInPath(x, y);
+          } else {
+            var left = _this2.left,
+                top = _this2.top,
+                width = _this2.width,
+                height = _this2.height;
+
+            if (_this2.$parent) {
+              var _this2$$parent = _this2.$parent,
+                  pleft = _this2$$parent.left,
+                  ptop = _this2$$parent.top;
+
+              left += pleft;
+              top += ptop;
+            }
+            result = x >= left && x <= left + width && y >= top && y <= top + height;
+          }
+        }
+        return result;
+      };
+
+      _this2.name = name;
+      _this2._id = 's' + getUniqueTime();
+      _this2._painter = painter;
+      _this2.behaviors = Array.isArray(behaviors) ? behaviors : [];
+      _this2.injectRelevantProps();
+      _this2.initArgs(args);
+      return _this2;
     }
 
     createClass(Sprite, [{
@@ -226,12 +466,12 @@
     }, {
       key: 'injectRelevantProps',
       value: function injectRelevantProps() {
-        var _this2 = this;
+        var _this3 = this;
 
         Object.keys(relevantProps).forEach(function (name) {
           var oldValue = relevantProps[name];
-          var _this = _this2;
-          Object.defineProperty(_this2, name, {
+          var _this = _this3;
+          Object.defineProperty(_this3, name, {
             enumerable: true,
             configurable: true,
             get: function get$$1() {
@@ -244,7 +484,7 @@
               }
               oldValue = newValue;
               _this.needAutoRP && _this._autoRotatePoint(name);
-              _this.updated = true;
+              _this.needUpdate = true;
             }
           });
         });
@@ -272,13 +512,15 @@
         auto && (point.auto = true);
         return point;
       }
-      /*设置精灵路径*/
+      /* 设置精灵路径 */
 
     }, {
       key: 'setPath',
       value: function setPath(fn) {
-        isType(fn, 'function') && (this.path = fn);
+        isType(fn, 'function') && (this._path = fn);
       }
+      /* 检测左边是否在精灵路径内 */
+
     }, {
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
@@ -292,14 +534,59 @@
           this._painter.paint(this, context, time, fdelta, data);
           context.restore();
         }
+        this.children.length && this.children.forEach(function (i) {
+          return i.paint && i.paint(context, time, fdelta);
+        });
+        this.needUpdate = false;
       }
     }, {
       key: 'update',
       value: function update(time, fdelta, data, context) {
-        this.updated = false;
         !this._startTime && (this._startTime = time);
         this._runBehaviors(time, fdelta, data, context);
-        this.updated && (context.isStatic = false);
+        this.children.length && this.children.forEach(function (i, index, arr) {
+          i.destroy ? arr.splice(index, 1) : i.update(time, fdelta, data, context);
+        });
+        this.needUpdate && (context.isStatic = false);
+      }
+
+      /* 添加子元素，精灵或层 */
+
+    }, {
+      key: 'append',
+      value: function append() {
+        var _this4 = this;
+
+        var children = this.children;
+
+        for (var _len = arguments.length, child = Array(_len), _key = 0; _key < _len; _key++) {
+          child[_key] = arguments[_key];
+        }
+
+        children.push.apply(children, child);
+        child.forEach(function (item) {
+          return item.$parent = _this4;
+        });
+        objKeySort(children, 'zindex');
+      }
+    }, {
+      key: 'addBehaviors',
+      value: function addBehaviors() {
+        var _behaviors;
+
+        for (var _len2 = arguments.length, behaviors = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+          behaviors[_key2] = arguments[_key2];
+        }
+
+        this._behaviorsSigned(behaviors);
+        (_behaviors = this.behaviors).push.apply(_behaviors, behaviors);
+      }
+    }, {
+      key: '_behaviorsSigned',
+      value: function _behaviorsSigned(behaviors) {
+        behaviors.forEach(function (item) {
+          !item._bid && (item._bid = +new Date());
+        });
       }
     }, {
       key: '_runBehaviors',
@@ -311,10 +598,9 @@
         var _iteratorError = undefined;
 
         try {
-          for (var _iterator = Object.keys(behaviors)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var i = _step.value;
+          for (var _iterator = behaviors[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var behavior = _step.value;
 
-            var behavior = behaviors[i];
             if (behavior.delay) {
               if (time - _startTime - behavior.delay < 0) {
                 continue;
@@ -338,76 +624,22 @@
           }
         }
       }
+    }, {
+      key: '$path',
+      get: function get$$1() {
+        return this._path;
+      }
     }]);
     return Sprite;
-  }();
+  }(Event);
 
   /*
-  * 图层类，用于提供多层容器
+  * 基础图层类，提供舞台内根精灵
   * 
   */
 
-  var Layer = function (_Sprite) {
-    inherits(Layer, _Sprite);
-
-    function Layer() {
-      var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-      var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-      var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      classCallCheck(this, Layer);
-
-      var _this = possibleConstructorReturn(this, (Layer.__proto__ || Object.getPrototypeOf(Layer)).call(this, name, args, painter, behaviors));
-
-      _this.TYPE = 'layer';
-
-      _this.children = [];
-      return _this;
-    }
-
-    createClass(Layer, [{
-      key: 'paint',
-      value: function paint(context, time, fdelta, data) {
-        get(Layer.prototype.__proto__ || Object.getPrototypeOf(Layer.prototype), 'paint', this).call(this, context, time, fdelta, data);
-        this.children.forEach(function (i) {
-          return i.paint && i.paint(context, time, fdelta);
-        });
-      }
-    }, {
-      key: 'update',
-      value: function update(time, fdelta, data, context) {
-        get(Layer.prototype.__proto__ || Object.getPrototypeOf(Layer.prototype), 'update', this).call(this, time, fdelta, data, context);
-        this.children.forEach(function (i, index, arr) {
-          i.destroy && arr.splice(index, 1);
-          i.update && i.update(time, fdelta, data, context);
-        });
-      }
-      /* 添加子元素，精灵或层 */
-
-    }, {
-      key: 'append',
-      value: function append() {
-        var _this2 = this;
-
-        var children = this.children;
-
-        for (var _len = arguments.length, child = Array(_len), _key = 0; _key < _len; _key++) {
-          child[_key] = arguments[_key];
-        }
-
-        children.push.apply(children, child);
-        child.forEach(function (item) {
-          return item.$parent = _this2;
-        });
-        objKeySort(children, 'zindex');
-      }
-    }]);
-    return Layer;
-  }(Sprite);
-
-
-  var BaseLayer = function (_Layer) {
-    inherits(BaseLayer, _Layer);
+  var BaseLayer = function (_Sprite) {
+    inherits(BaseLayer, _Sprite);
 
     function BaseLayer() {
       var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
@@ -417,12 +649,6 @@
     }
 
     createClass(BaseLayer, [{
-      key: 'update',
-      value: function update(time, fdelta, data, context) {
-        context.isStatic = true;
-        get(BaseLayer.prototype.__proto__ || Object.getPrototypeOf(BaseLayer.prototype), 'update', this).call(this, time, fdelta, data, context);
-      }
-    }, {
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
         if (!context.isStatic) {
@@ -435,7 +661,7 @@
       }
     }]);
     return BaseLayer;
-  }(Layer);
+  }(Sprite);
 
   var Stage = function () {
     function Stage(name, options) {
@@ -445,8 +671,9 @@
       this._playing = true;
 
       this.update = function (elapsed, fdelta, data) {
+        var context = _this._ctx;
+        context.isStatic = true;
         if (_this._playing) {
-          var context = _this._ctx;
           _this._stage.update(elapsed, fdelta, data, context);
           _this._stage.paint(context, elapsed, fdelta, data);
         }
@@ -468,6 +695,7 @@
       key: 'resetOptions',
       value: function resetOptions(options, fresh) {
         fresh || !this._options ? this._options = Object.assign({}, options) : Object.assign(this._options, options);
+        this.zIndex = this._options.zIndex || 0;
       }
     }, {
       key: 'elemInit',
@@ -541,25 +769,64 @@
     rotatePoint: { x: 0, y: 0 }
   };
 
-  var Sprite$1 = function () {
+  var Sprite$1 = function (_Event) {
+    inherits(Sprite, _Event);
+
     function Sprite() {
       var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
       var painter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var behaviors = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       classCallCheck(this, Sprite);
-      this._startTime = 0;
-      this._autoRP = true;
-      this._updated = false;
-      this.$data = {};
-      this.$media = new Media();
-      this.TYPE = 'sprite';
 
-      this.name = name;
-      this._painter = painter;
-      this.behaviors = isType(behaviors, 'object') ? behaviors : {};
-      this.injectRelevantProps();
-      this.initArgs(args);
+      var _this2 = possibleConstructorReturn(this, (Sprite.__proto__ || Object.getPrototypeOf(Sprite)).call(this));
+
+      _this2._startTime = 0;
+      _this2._autoRP = true;
+      _this2.needUpdate = false;
+      _this2.$data = {};
+      _this2.$media = new Media();
+      _this2.children = [];
+
+      _this2.isPointInpath = function () {
+        var positon = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        var context = arguments[1];
+
+        var result = false;
+        var x = positon.x,
+            y = positon.y;
+
+        if (isNumeric(x) && isNumeric(y)) {
+          if (_this2._path && context) {
+            _this2._path(context);
+            result = context.isPointInPath(x, y);
+          } else {
+            var left = _this2.left,
+                top = _this2.top,
+                width = _this2.width,
+                height = _this2.height;
+
+            if (_this2.$parent) {
+              var _this2$$parent = _this2.$parent,
+                  pleft = _this2$$parent.left,
+                  ptop = _this2$$parent.top;
+
+              left += pleft;
+              top += ptop;
+            }
+            result = x >= left && x <= left + width && y >= top && y <= top + height;
+          }
+        }
+        return result;
+      };
+
+      _this2.name = name;
+      _this2._id = 's' + getUniqueTime();
+      _this2._painter = painter;
+      _this2.behaviors = Array.isArray(behaviors) ? behaviors : [];
+      _this2.injectRelevantProps();
+      _this2.initArgs(args);
+      return _this2;
     }
 
     createClass(Sprite, [{
@@ -571,12 +838,12 @@
     }, {
       key: 'injectRelevantProps',
       value: function injectRelevantProps() {
-        var _this2 = this;
+        var _this3 = this;
 
         Object.keys(relevantProps$1).forEach(function (name) {
           var oldValue = relevantProps$1[name];
-          var _this = _this2;
-          Object.defineProperty(_this2, name, {
+          var _this = _this3;
+          Object.defineProperty(_this3, name, {
             enumerable: true,
             configurable: true,
             get: function get$$1() {
@@ -589,7 +856,7 @@
               }
               oldValue = newValue;
               _this.needAutoRP && _this._autoRotatePoint(name);
-              _this.updated = true;
+              _this.needUpdate = true;
             }
           });
         });
@@ -617,13 +884,15 @@
         auto && (point.auto = true);
         return point;
       }
-      /*设置精灵路径*/
+      /* 设置精灵路径 */
 
     }, {
       key: 'setPath',
       value: function setPath(fn) {
-        isType(fn, 'function') && (this.path = fn);
+        isType(fn, 'function') && (this._path = fn);
       }
+      /* 检测左边是否在精灵路径内 */
+
     }, {
       key: 'paint',
       value: function paint(context, time, fdelta, data) {
@@ -637,14 +906,59 @@
           this._painter.paint(this, context, time, fdelta, data);
           context.restore();
         }
+        this.children.length && this.children.forEach(function (i) {
+          return i.paint && i.paint(context, time, fdelta);
+        });
+        this.needUpdate = false;
       }
     }, {
       key: 'update',
       value: function update(time, fdelta, data, context) {
-        this.updated = false;
         !this._startTime && (this._startTime = time);
         this._runBehaviors(time, fdelta, data, context);
-        this.updated && (context.isStatic = false);
+        this.children.length && this.children.forEach(function (i, index, arr) {
+          i.destroy ? arr.splice(index, 1) : i.update(time, fdelta, data, context);
+        });
+        this.needUpdate && (context.isStatic = false);
+      }
+
+      /* 添加子元素，精灵或层 */
+
+    }, {
+      key: 'append',
+      value: function append() {
+        var _this4 = this;
+
+        var children = this.children;
+
+        for (var _len = arguments.length, child = Array(_len), _key = 0; _key < _len; _key++) {
+          child[_key] = arguments[_key];
+        }
+
+        children.push.apply(children, child);
+        child.forEach(function (item) {
+          return item.$parent = _this4;
+        });
+        objKeySort(children, 'zindex');
+      }
+    }, {
+      key: 'addBehaviors',
+      value: function addBehaviors() {
+        var _behaviors;
+
+        for (var _len2 = arguments.length, behaviors = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+          behaviors[_key2] = arguments[_key2];
+        }
+
+        this._behaviorsSigned(behaviors);
+        (_behaviors = this.behaviors).push.apply(_behaviors, behaviors);
+      }
+    }, {
+      key: '_behaviorsSigned',
+      value: function _behaviorsSigned(behaviors) {
+        behaviors.forEach(function (item) {
+          !item._bid && (item._bid = +new Date());
+        });
       }
     }, {
       key: '_runBehaviors',
@@ -656,10 +970,9 @@
         var _iteratorError = undefined;
 
         try {
-          for (var _iterator = Object.keys(behaviors)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var i = _step.value;
+          for (var _iterator = behaviors[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var behavior = _step.value;
 
-            var behavior = behaviors[i];
             if (behavior.delay) {
               if (time - _startTime - behavior.delay < 0) {
                 continue;
@@ -683,9 +996,14 @@
           }
         }
       }
+    }, {
+      key: '$path',
+      get: function get$$1() {
+        return this._path;
+      }
     }]);
     return Sprite;
-  }();
+  }(Event);
 
   /*
   * 绘制器基础类，用于提供基础的绘制器逻辑方便扩展
@@ -742,12 +1060,12 @@
     }, {
       key: 'getPhoto',
       value: function getPhoto(sprite, context) {
-        sprite.data.photo = context.getImageData(sprite.left, sprite.top, sprite.width, sprite.height);
+        sprite.$data.photo = context.getImageData(sprite.left, sprite.top, sprite.width, sprite.height);
       }
     }, {
       key: 'putPhoto',
       value: function putPhoto(sprite, context) {
-        context.putImageData(sprite.data.photo, sprite.left, sprite.top);
+        context.putImageData(sprite.$data.photo, sprite.left, sprite.top);
       }
     }]);
     return Painter;
@@ -1105,6 +1423,8 @@
     }, {
       key: 'execute',
       value: function execute(sprite, time, fdelta, data, context) {
+        var _this = this;
+
         /*单次执行，用于计算初始值*/
         if (!this._firstRun) {
           this._remeberAttrs(sprite);
@@ -1153,7 +1473,10 @@
           this.executeFn(sprite, time, fdelta, data, context);
         } else {
           isType(this.animateCallback, 'function') && this.animateCallback(sprite, context);
-          delete sprite.behaviors[this.name]; //行为执行完销毁自身W
+          var behaviorIndex = sprite.behaviors.findIndex(function (item) {
+            return item._bid === _this._bid;
+          });
+          sprite.behaviors.splice(behaviorIndex, 1); //行为执行完销毁自身W
         }
       }
     }, {
@@ -1176,7 +1499,6 @@
           !this.animation['0'] && !this.animation['100'] && (this.animation = { 0: null, 100: this.animation }); //处理单层数据
           var animation = this.animation,
               _animaRuntime = this._animaRuntime;
-
 
           for (var i in animation) {
             i === 0 && animation[0] && this._spriteAttrSet(sprite, animation[0], true);
@@ -1234,7 +1556,6 @@
       key: '_attrChange',
       value: function _attrChange(sprite, time, fdelta, data, context) {
         var velocity = this._animaRuntime.velocity;
-
 
         for (var i in velocity) {
           sprite[i] += velocity[i] * fdelta;
@@ -1453,11 +1774,53 @@
     return MediaLoader;
   }();
 
+  var EventNames = Object.keys(Event.eventMap);
+
   var Anicanvas = function () {
     function Anicanvas(elem, opts) {
-      classCallCheck(this, Anicanvas);
+      var _this = this;
 
-      _initialiseProps.call(this);
+      classCallCheck(this, Anicanvas);
+      this._RAF = 0;
+      this._stages = [];
+      this.$stages = {};
+      this.$stage = null;
+      this.$layers = {};
+      this.$media = new MediaLoader();
+
+      this.eventHandle = function (event) {
+        var spriteEvents = Event.eventMap[event.type];
+        if (spriteEvents) {
+          var _stages = _this._stages;
+          // search the target sprite
+
+          Event.eventCapture(_stages, event);
+          // bubbling and get all callbacks those need to be excute;
+          var fnQueue = Event.eventBubbling(event, spriteEvents);
+          fnQueue.forEach(function (item) {
+            return item();
+          });
+        }
+      };
+
+      this.animation = function (elapsed, fdelta) {
+        _this._stages.forEach(function (stage) {
+          return stage.update(elapsed, fdelta);
+        });
+      };
+
+      this.append = function () {
+        var _$stage;
+
+        for (var _len = arguments.length, child = Array(_len), _key = 0; _key < _len; _key++) {
+          child[_key] = arguments[_key];
+        }
+
+        child.forEach(function (item) {
+          !_this.$layers[item.name] && (_this.$layers[item.name] = item);
+        });
+        (_$stage = _this.$stage).append.apply(_$stage, child);
+      };
 
       this._elem = this.elemInit(elem);
       this._options = Object.assign({}, opts);
@@ -1474,6 +1837,7 @@
       key: 'stageInit',
       value: function stageInit() {
         if (this._elem) {
+          this.eventListening();
           var _options = this._options,
               width = _options.width,
               height = _options.height;
@@ -1483,6 +1847,15 @@
         } else {
           errWarn('no accessable root element!');
         }
+      }
+    }, {
+      key: 'eventListening',
+      value: function eventListening() {
+        var _this2 = this;
+
+        EventNames.forEach(function (item) {
+          _this2._elem.addEventListener(item, _this2.eventHandle);
+        });
       }
     }, {
       key: 'createStage',
@@ -1542,8 +1915,8 @@
     }, {
       key: 'createPainter',
       value: function createPainter(type) {
-        for (var _len = arguments.length, options = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-          options[_key - 1] = arguments[_key];
+        for (var _len2 = arguments.length, options = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+          options[_key2 - 1] = arguments[_key2];
         }
 
         switch (type) {
@@ -1564,6 +1937,15 @@
         isType(size, 'object') && Object.assign(this._elem, size);
       }
     }, {
+      key: '$elemSize',
+      get: function get$$1() {
+        var _options4 = this._options,
+            width = _options4.width,
+            height = _options4.height;
+
+        return { width: width, height: height };
+      }
+    }, {
       key: 'frameRate',
       get: function get$$1() {
         return this._aniTimer.frameRate;
@@ -1573,47 +1955,10 @@
   }();
 
   Anicanvas.Sprite = Sprite$1;
-  Anicanvas.Layer = Layer;
   Anicanvas.Painter = Painter;
   Anicanvas.ImagePainter = ImagePainter;
   Anicanvas.SheetPainter = SheetPainter;
   Anicanvas.Behavior = Behavior;
-
-  var _initialiseProps = function _initialiseProps() {
-    var _this = this;
-
-    this._RAF = 0;
-    this._stages = [];
-    this.$stages = {};
-    this.$stage = null;
-    this.$layers = {};
-    this.$media = new MediaLoader();
-
-    this.animation = function (elapsed, fdelta) {
-      _this._stages.forEach(function (stage) {
-        return stage.update(elapsed, fdelta);
-      });
-    };
-
-    this.createLayer = function (name, options, painter) {
-      if (isType(name, 'string')) {
-        var opts = null;
-        if (isType(options, 'function')) {
-          painter = options;
-        } else {
-          opts = options === 'fullpage' ? { width: _this._options.width, height: _this._options.height } : options;
-        }
-        _this.$layers[name] = new Layer(name, opts, painter);
-        return _this.$layers[name];
-      }
-    };
-
-    this.append = function () {
-      var _$stage;
-
-      (_$stage = _this.$stage).append.apply(_$stage, arguments);
-    };
-  };
 
   return Anicanvas;
 

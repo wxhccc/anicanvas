@@ -1,5 +1,6 @@
+import Event from './Event';
 import Media from './Media';
-import {isType, jsonEqual} from '../utils';
+import {isType, jsonEqual, isNumeric, objKeySort, getUniqueTime} from '../utils';
 /*
 * 精灵类，用于处理各种精灵对象的绘制和行为
 * 
@@ -20,17 +21,19 @@ const relevantProps = {
   destroy: false,
   rotatePoint: {x: 0, y: 0}
 };
-export default class Sprite {
+export default class Sprite extends Event {
   _startTime = 0;
   _autoRP = true;
-  _updated = false;
+  needUpdate = false;
   $data = {};
   $media = new Media;
-  TYPE = 'sprite';
+  children = [];
   constructor(name='',args={}, painter=null, behaviors={}){
+    super();
     this.name = name;
+    this._id = 's' + getUniqueTime();
     this._painter = painter;
-    this.behaviors = isType(behaviors, 'object') ? behaviors : {};
+    this.behaviors = Array.isArray(behaviors) ? behaviors : [];
     this.injectRelevantProps();
     this.initArgs(args);
   }
@@ -38,6 +41,10 @@ export default class Sprite {
     Object.assign(this, args);
     !this.needAutoRP && (this.rotatePoint = this._spriteRP())
   }
+  get $path(){
+    return this._path;
+  }
+
   injectRelevantProps(){
     Object.keys(relevantProps).forEach(name => {
       let oldValue = relevantProps[name];
@@ -55,7 +62,7 @@ export default class Sprite {
           }
           oldValue = newValue;
           _this.needAutoRP && _this._autoRotatePoint(name);
-          _this.updated = true;
+          _this.needUpdate = true;
         }
       })
     })
@@ -79,9 +86,30 @@ export default class Sprite {
     auto && (point.auto = true);
     return point;
   }
-  /*设置精灵路径*/
+  /* 设置精灵路径 */
   setPath(fn){
-    isType(fn, 'function') && (this.path = fn);
+    isType(fn, 'function') && (this._path = fn);
+  }
+  /* 检测左边是否在精灵路径内 */
+  isPointInpath = (positon = {}, context)=>{
+    let result = false;
+    let {x, y} = positon;
+    if(isNumeric(x) && isNumeric(y)) {
+      if(this._path && context) {
+        this._path(context);
+        result = context.isPointInPath(x, y);
+      }
+      else {
+        let {left, top, width, height} = this;
+        if(this.$parent) {
+          let {left: pleft, top: ptop} = this.$parent;
+          left += pleft;
+          top += ptop;
+        }
+        result = (x >= left && x <= left + width && y >= top && y <= top + height);
+      }
+    }
+    return result;
   }
   paint(context, time, fdelta, data) {
     if(this._painter && this._painter.paint && this.visible){
@@ -91,19 +119,40 @@ export default class Sprite {
       this._painter.paint(this, context, time, fdelta, data);
       context.restore();
     }
-    
+    this.children.length && this.children.forEach(i => (i.paint &&　i.paint(context, time, fdelta)));
+    this.needUpdate = false;
   }
   update(time, fdelta, data, context) {
-    this.updated = false;
     !this._startTime && (this._startTime = time);
     this._runBehaviors(time, fdelta, data, context);
-    this.updated && (context.isStatic = false);
+    this.children.length && this.children.forEach((i, index, arr) => {
+      i.destroy ? arr.splice(index, 1) : i.update(time, fdelta, data, context);
+    });
+    this.needUpdate && (context.isStatic = false);
+  }
+
+  /* 添加子元素，精灵或层 */
+  append(...child){
+    let { children } = this;
+    children.push(...child);
+    child.forEach(item => (item.$parent = this))
+    objKeySort(children, 'zindex');
+  }
+
+  addBehaviors(...behaviors) {
+    this._behaviorsSigned(behaviors);
+    this.behaviors.push(...behaviors);
+  }
+
+  _behaviorsSigned(behaviors) {
+    behaviors.forEach(item => {
+      !item._bid && (item._bid = +new Date());
+    })
   }
 
   _runBehaviors(time, fdelta, data, context) {
     let {behaviors, _startTime} = this;
-    for(let i of Object.keys(behaviors)){
-      let behavior = behaviors[i];
+    for(let behavior of behaviors){
       if(behavior.delay){
         if(time - _startTime - behavior.delay < 0){
           continue;

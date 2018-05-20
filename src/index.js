@@ -1,6 +1,7 @@
-import {Stage, Sprite, Layer, Painter, ImagePainter, SheetPainter, Behavior, AnimationTimer, MediaLoader} from './core';
-import {BaseLayer} from './core/Layer';
+import {Event, Stage, Sprite, Painter, ImagePainter, SheetPainter, Behavior, AnimationTimer, MediaLoader} from './core';
 import {isType, isNumeric, objKeySort, errWarn} from './utils';
+
+const EventNames = Object.keys(Event.eventMap);
 
 export default class Anicanvas {
   _RAF = 0;
@@ -18,8 +19,13 @@ export default class Anicanvas {
   elemInit(elem) {
     return isType(elem, 'string') ? document.querySelector(elem) : null;
   }
+  get $elemSize(){
+    let {width, height} = this._options
+    return {width, height};
+  }
   stageInit() {
     if(this._elem){
+      this.eventListening();
       let {width, height} = this._options;
       this.createStage('MAIN', {width, height, zIndex: 1000});
       this.$stage = this.$stages.MAIN;
@@ -28,6 +34,23 @@ export default class Anicanvas {
       errWarn('no accessable root element!');
     }
   }
+  eventListening(){
+    EventNames.forEach(item => {
+      this._elem.addEventListener(item, this.eventHandle);
+    })
+  }
+  eventHandle = (event) =>{
+    let spriteEvents = Event.eventMap[event.type]
+    if(spriteEvents){
+      let {_stages} = this;
+      // search the target sprite
+      Event.eventCapture(_stages, event);
+      // bubbling and get all callbacks those need to be excute;
+      let fnQueue = Event.eventBubbling(event, spriteEvents);
+      fnQueue.forEach(item => item());
+    }
+  }
+  
   createStage(name, options){
     if(isType(name, 'string') && !this.$stages[name]){
       let {width, height} = this._options;
@@ -82,20 +105,10 @@ export default class Anicanvas {
         break;
     }
   }
-  createLayer = (name, options, painter) => {
-    if(isType(name, 'string')) {
-      let opts = null
-      if(isType(options, 'function')) {
-        painter = options;
-      }
-      else{
-        opts = options === 'fullpage' ? {width: this._options.width, height: this._options.height} : options;
-      }
-      this.$layers[name] = new Layer(name, opts, painter);
-      return this.$layers[name];
-    }
-  }
   append = (...child) => {
+    child.forEach(item => {
+      !this.$layers[item.name] && (this.$layers[item.name] = item);
+    });
     this.$stage.append(...child);
   }  
 
@@ -105,7 +118,6 @@ export default class Anicanvas {
 
   
   static Sprite = Sprite;
-  static Layer = Layer;
   static Painter = Painter;
   static ImagePainter = ImagePainter;
   static SheetPainter = SheetPainter;

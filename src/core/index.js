@@ -1,6 +1,7 @@
+export Event from './Event'
 export Stage from './Stage'
 export Sprite from './Sprite'
-export Layer from './Layer'
+export BaseLayer from './BaseLayer'
 export Painter from './Painter'
 export {ImagePainter, SheetPainter} from './CommonPainter'
 export Behavior from './Behavior'

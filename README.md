@@ -10,7 +10,7 @@ CDN: https://cdn.jsdelivr.net/npm/anicanvas@0.0.3/dist/anicanvas.min.js
 
 # 使用说明
 
-简单的实例
+简单的实例(es6语法)
 ```
 import Anicanvas from 'anicanvas'
 const app = new Anicanvas('#app', {width: 200, height: 100}); //创建实例
@@ -24,13 +24,13 @@ const ballPainter = new Anicanvas.Painter((sprite, context, time, fdelta) => {
   context.fill();
   context.restore();
 });
-const ballBehaviors = {
-  'rollRight': new Anicanvas.Behavior({
+const ballBehaviors = [
+  new Anicanvas.Behavior({
     name: 'rollRight',
     duration:1000,
     animation: {left: 50}
   }),
-  'rollDown': new Anicanvas.Behavior({
+  new Anicanvas.Behavior({
     name: 'rollDown',
     duration:1000,
     delay: 1000, //延迟1000ms执行，让rollRight先执行完
@@ -39,7 +39,7 @@ const ballBehaviors = {
       100: {top: 50, opacity: 0.5}
     }
   })
-};
+];
 const ball = new Anicanvas.Sprite('ball', {width: 20, height: 20}, ballPainter, ballBehaviors);
 app.append(ball);
 app.start();
@@ -76,20 +76,20 @@ app.start();
       context.fill();
       context.restore();
     });
-    var ballBehaviors = {
-      'rollRight': new Anicanvas.Behavior({
+    var ballBehaviors = [
+      new Anicanvas.Behavior({
         name: 'rollRight',
         duration:1000,
         animation: {left: 50}
       }),
-      'rollDown': new Anicanvas.Behavior({
+      new Anicanvas.Behavior({
         name: 'rollDown',
         duration: 1000,
         delay: 1000, 
         animation: {top: 50, opacity: 0.4}
       })
-    };
-    var bgLayer = new Anicanvas.Layer('bg', {width: 200, height: 100}, bgPainter);
+    ];
+    var bgLayer = new Anicanvas.Sprite('bg', {width: 200, height: 100}, bgPainter);
     var ball = new Anicanvas.Sprite('ball', {width: 20, height: 20, opacity: 1}, ballPainter, ballBehaviors);
     app.append(bgLayer, ball);
     app.start();
@@ -98,6 +98,5 @@ app.start();
 </html>
 ```
 
-稍微复杂的实例可以看demo, 里面涉及到目前此库已有功能，包括资源加载和管理，分层绘制，多舞台层叠，低频次舞台惰化。
+稍微复杂的实例可以看demo, 里面涉及到目前此库已有功能，包括资源加载和管理，分层绘制，多舞台层叠，低频次舞台惰化，事件绑定功能
 
-ps：目前还没有事件处理模块，后续会添加

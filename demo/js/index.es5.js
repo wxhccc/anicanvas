@@ -75,9 +75,9 @@
             _AC$$media = _AC.$media,
             images = _AC$$media.images,
             audios = _AC$$media.audios,
-            createLayer = _AC.createLayer,
+            $elemSize = _AC.$elemSize,
             append = _AC.append,
-            pageLayer = createLayer('page', 'fullpage', new Anicanvas.ImagePainter(images['bg1']));
+            pageLayer = new Anicanvas.Sprite('page', $elemSize, new Anicanvas.ImagePainter(images['bg1']));
 
         /*音乐播放按钮*/
         var musicIcoPainter = new Anicanvas.ImagePainter(images['music']);
@@ -88,16 +88,27 @@
           width: 1.2 * rem,
           height: 1.2 * rem,
           rotateVelocity: -45
-        }, musicIcoPainter, {
-          'rotate': {
-            execute: function execute(sprite, time, fdelta, data, context) {
-              sprite.rotate = (sprite.rotate + fdelta / 1000 * sprite.rotateVelocity) % 360;
-            }
+        }, musicIcoPainter, [{
+          execute: function execute(sprite, time, fdelta, data, context) {
+            sprite.rotate = (sprite.rotate + fdelta / 1000 * sprite.rotateVelocity) % 360;
           }
-        });
+        }]);
         musicIco.$media.music = audios['m1'];
         musicIco.setPath(function (context) {
-          context.arc(this.left + this.width / 2, this.top + this.height / 2, 0, 2 * Math.PI);
+          var left = this.left,
+              top = this.top,
+              width = this.width,
+              height = this.height;
+          var _$parent = this.$parent,
+              pleft = _$parent.left,
+              ptop = _$parent.top;
+
+          left += pleft;
+          top += ptop;
+          context.arc(left + width / 2, top + height / 2, width / 2, 0, 2 * Math.PI);
+        });
+        musicIco.on('click', function (event) {
+          this.$media.music.paused ? this.$media.play('music') : this.$media.pause('music');
         });
         musicIco.$media.play('music');
 
@@ -119,22 +130,21 @@
             context.restore();
           }
         });
+        var dailogBehavior = new Anicanvas.Behavior({
+          name: 'slideFadeDown',
+          timing: 'ease',
+          duration: 800,
+          delay: 700,
+          fillMode: 'forward',
+          animation: { top: '+=20', opacity: 1 }
+        });
         var dailog = new Anicanvas.Sprite('dailog', {
           top: -20,
           left: 2.64 * rem,
           opacity: 0,
           width: 8.8 * rem,
           height: 6.76 * rem
-        }, dailogPainter, {
-          'slideFadeDown': new Anicanvas.Behavior({
-            name: 'slideFadeDown',
-            timing: 'ease',
-            duration: 800,
-            delay: 700,
-            fillMode: 'forward',
-            animation: { top: '+=20', opacity: 1 }
-          })
-        });
+        }, dailogPainter, [dailogBehavior]);
 
         /*箭头动画*/
         var arrowSlide = new Anicanvas.Behavior({
@@ -148,7 +158,7 @@
             100: { top: '-=10', opacity: 0 }
           }
         });
-        var arrow = new Anicanvas.Sprite('arrow', { top: canvasSize.height - 2 * rem + 8, left: 6.92 * rem, width: 1.16 * rem, opacity: 0, height: 1.16 * rem }, new Anicanvas.ImagePainter(images['arrow']), { 'slideUpRepeat': arrowSlide });
+        var arrow = new Anicanvas.Sprite('arrow', { top: canvasSize.height - 2 * rem + 8, left: 6.92 * rem, width: 1.16 * rem, opacity: 0, height: 1.16 * rem }, new Anicanvas.ImagePainter(images['arrow']), [arrowSlide]);
 
         /*背景*/
         var midBgPanter = {
@@ -165,41 +175,40 @@
             }
           }
         };
-        var midBgBehaviors = {
-          'slideUp': {
-            distance: -20, duration: 800, delay: 2500,
-            execute: function execute(sprite, time) {
-              sprite.$data.img = images['p1_02_01'];
-              var deltat = time - sprite._startTime - this.delay;
-              if (deltat > 0) {
-                sprite.velocityY = this.distance / this.duration;
-                var opacity = deltat / this.duration;
-                if (deltat >= 800) {
-                  sprite.velocityY = 0;
-                  opacity = 1;
-                  delete sprite.behaviors.slideUp;
-                }
-                sprite.opacity = opacity > 1 ? 1 : opacity;
+        var midBgBehaviors = [{
+          name: 'slideUp',
+          distance: -20, duration: 800, delay: 2500,
+          execute: function execute(sprite, time) {
+            sprite.$data.img = images['p1_02_01'];
+            var deltat = time - sprite._startTime - this.delay;
+            if (deltat > 0) {
+              sprite.velocityY = this.distance / this.duration;
+              var opacity = deltat / this.duration;
+              if (deltat >= 800) {
+                sprite.velocityY = 0;
+                opacity = 1;
+                delete sprite.behaviors.slideUp;
               }
+              sprite.opacity = opacity > 1 ? 1 : opacity;
             }
-          },
-          'bgswitch': {
-            delay: 3500,
-            execute: function execute(sprite, time) {
-              var deltat = time - sprite._startTime - this.delay;
-              if (deltat > 0) {
-                var skipt = deltat % 1000;
-                if (skipt < 500) {
-                  sprite.$data.img = images['p1_02_01'];
-                } else {
-                  sprite.$data.img = images['p1_02_02'];
-                }
+          }
+        }, {
+          name: 'bgswitch',
+          delay: 3500,
+          execute: function execute(sprite, time) {
+            var deltat = time - sprite._startTime - this.delay;
+            if (deltat > 0) {
+              var skipt = deltat % 1000;
+              if (skipt < 500) {
+                sprite.$data.img = images['p1_02_01'];
+              } else {
+                sprite.$data.img = images['p1_02_02'];
               }
             }
           }
-        };
+        }];
 
-        var midBgLayer = new Anicanvas.Layer('midbg', { top: 6.96 * rem + 20, left: 0.52 * rem, width: 13.52 * rem, opacity: 0, height: 12.7 * rem, data: { img: null } }, midBgPanter, midBgBehaviors);
+        var midBgLayer = new Anicanvas.Sprite('midbg', { top: 6.96 * rem + 20, left: 0.52 * rem, width: 13.52 * rem, opacity: 0, height: 12.7 * rem, data: { img: null } }, midBgPanter, midBgBehaviors);
         /*人物*/
         var peopleCell = [{ x: 0, y: 0, w: 268, h: 384 }, { x: 270, y: 0, w: 268, h: 384 }, { x: 540, y: 0, w: 268, h: 384 }, { x: 810, y: 0, w: 268, h: 384 }],
             peoplePainter = new Anicanvas.SheetPainter(images['p1_03_01'], peopleCell, { interval: 500, autoruning: true, iteration: 'infinite' });
@@ -216,9 +225,14 @@
         var desc = new Anicanvas.Sprite('desc', { top: 14.275 * rem, left: 3.84 * rem, width: 7.02 * rem, height: 5.12 * rem, $data: { img: images['p1_03_02'] } }, customPainter);
 
         _this.AC.append(musicIco, midBgLayer, arrow, people, desc);
+        pageLayer.append(floor, dailog);
+        dailog.on('click', function (event) {
+          console.log(this.name, event, 1);
+        });
 
-        pageLayer.append(dailog);
-        pageLayer.append(floor);
+        pageLayer.on('click', ['dailog'], function (event) {
+          console.log(this.name, event, 2);
+        });
         _this.AC.$stages['background'].append(pageLayer);
       };
 
@@ -286,7 +300,7 @@
           ctx.fillRect(left, top, width, height);
           ctx.restore();
         });
-        var layer = this.AC.createLayer('progLayer', 'fullpage', bgPainter);
+        var layer = new Anicanvas.Sprite('progLayer', this.AC.$elemSize, bgPainter);
 
         var progbarPaniter = new Anicanvas.Painter(function (sprite, ctx, time, fdelta, data) {
           var left = sprite.left,
@@ -303,17 +317,15 @@
           ctx.restore();
         });
         var progresUpdate = {
-          'update': {
-            execute: function execute(sprite, time) {
-              var mediaload = _this2.AC.$media.getImageProgress();
-              var percent = mediaload[2];
-              sprite.$data.percent = percent;
-              sprite.updated = true;
-              percent === 100 && (layer.destroy = true);
-            }
+          execute: function execute(sprite, time) {
+            var mediaload = _this2.AC.$media.getImageProgress();
+            var percent = mediaload[2];
+            sprite.$data.percent = percent;
+            sprite.needUpdate = true;
+            percent === 100 && (layer.destroy = true);
           }
         };
-        var progressBar = new Anicanvas.Sprite('progbar', { left: 1 * rem, top: height - 40, width: 13 * rem, height: 20 }, progbarPaniter, progresUpdate);
+        var progressBar = new Anicanvas.Sprite('progbar', { left: 1 * rem, top: height - 40, width: 13 * rem, height: 20 }, progbarPaniter, [progresUpdate]);
         layer.append(progressBar);
         this.AC.$stages['background'].append(layer);
       }
@@ -323,7 +335,6 @@
         var _this3 = this;
 
         var rem = this.rem;
-
         /*测试代码*/
 
         var ballRoll = {
@@ -355,14 +366,13 @@
             sheight = _AC$$stage$_stage.height;
 
         var _loop = function _loop(i) {
-          var width = 10 + Math.random() * 30;
+          var width = 30 + Math.random() * 30;
           var left = Math.random() * swidth - width;
           var top = Math.random() * swidth - width;
-          var velocityX = Math.random() * 20;
-          var velocityY = Math.random() * 20;
+          var velocityX = 0; //Math.random() * 20;
+          var velocityY = 0; //Math.random() * 20;
           var opacity = 0.2 + Math.random() * 0.8;
           var ballPainter = new Anicanvas.Painter(function (sprite, context, time, fdelta) {
-            console.log(_this3.AC.frameRate);
             var _sprite$rotatePoint = sprite.rotatePoint,
                 x = _sprite$rotatePoint.x,
                 y = _sprite$rotatePoint.y; //
@@ -375,7 +385,15 @@
             context.fill();
             context.restore();
           });
-          var ball = new Anicanvas.Sprite('ball' + i, { left: left, top: top, width: width, height: width, opacity: opacity, velocityX: velocityX, velocityY: velocityY }, ballPainter, { ballRoll: ballRoll });
+          var ball = new Anicanvas.Sprite('ball', { needAutoRP: true, left: left, top: top, width: width, height: width, opacity: opacity, velocityX: velocityX, velocityY: velocityY }, ballPainter, [ballRoll]);
+          ball.on('click', function (e) {
+            if (!this.velocityX) {
+              this.velocityX = Math.random() * 2;
+              this.velocityY = Math.random() * 2;
+            } else {
+              this.velocityX = this.velocityY = 0;
+            }
+          });
           _this3.AC.append(ball);
         };
 

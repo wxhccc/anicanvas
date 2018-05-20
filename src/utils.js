@@ -32,6 +32,9 @@ export function jsonCopy(obj) {
 export function jsonEqual(obj1, obj2) {  
   return JSON.stringify(obj1) === JSON.stringify(obj2);
 }
+export function getUniqueTime(){
+  return Math.floor( (+new Date + Math.random()) * 1000 );
+}
 /* 对象数组按某一键值排序 */
 export function objKeySort(obj_arr=[],key='',desc=false){
   return obj_arr.sort((a,b)=>{
