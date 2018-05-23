@@ -6,7 +6,7 @@ npm: npm install anicanvas
 
 本地：将dist目录下的anicanvas.min.js放到使用目录
 
-CDN: https://cdn.jsdelivr.net/npm/anicanvas@0.0.4/dist/anicanvas.min.js
+CDN: https://cdn.jsdelivr.net/npm/anicanvas/dist/anicanvas.min.js (最新版地址，指导版本可在anicanvas后添加@0.0.x版本号)
 
 # 使用说明
 
@@ -54,7 +54,7 @@ app.start();
 <body>
   <div class="wrap" id="app" style="border: 1px solid #aeaeae;width: 200px;height: 100px;">
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/anicanvas@0.0.3/dist/anicanvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/anicanvas/dist/anicanvas.min.js"></script>
   <script>
     var app = new Anicanvas('#app', {width: 200, height: 100}); //´´½¨ÊµÀý
     var bgPainter = new Anicanvas.Painter(function(sprite, context, time, fdelta){
@@ -90,7 +90,7 @@ app.start();
       })
     ];
     var bgLayer = new Anicanvas.Sprite('bg', {width: 200, height: 100}, bgPainter);
-    var ball = new Anicanvas.Sprite('ball', {width: 20, height: 20, opacity: 1}, ballPainter, ballBehaviors);
+    var ball = new Anicanvas.Sprite('ball', {needAutoRP: true, width: 20, height: 20, opacity: 1}, ballPainter, ballBehaviors);
     app.append(bgLayer, ball);
     app.start();
   </script>
@@ -98,5 +98,9 @@ app.start();
 </html>
 ```
 
-稍微复杂的实例可以看demo, 里面涉及到目前此库已有功能，包括资源加载和管理，分层绘制，多舞台层叠，低频次舞台惰化，事件绑定功能
+# DEMO
+
+在根目录下使用命令行工具运行 
+npm start 命令可开启本地node服务器来访问demo
+npm run demo-es5 可监听demo/js/index.js文件的修改并编译为es5环境代码，刷新页面可以看到修改后的效果
 
